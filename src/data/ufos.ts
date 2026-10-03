@@ -1,7 +1,10 @@
 import { bosses } from './bosses'
 import type { RewardOrigin } from '../types/rewardOrigin'
+import { numericUfoSeeds } from './numericRewards'
 
 export type UfoVariant =
+  | 'decimal-measure' | 'decimal-crystal' | 'decimal-precision'
+  | 'fraction-piece' | 'fraction-share' | 'fraction-harmony'
   | 'stage'
   | 'all'
   | 'square'
@@ -45,6 +48,7 @@ const bossUfoSeeds: Record<
   string,
   Pick<UfoDefinition, 'name' | 'description' | 'variant' | 'lights' | 'motif' | 'origin'>
 > = {
+  ...numericUfoSeeds,
   'boss-stage-2': {
     name: 'ツインライトごう',
     description: '2つのライトで1・2のだんをてらすUFO。',
@@ -219,7 +223,7 @@ export const bossUfos: UfoDefinition[] = bosses.flatMap((boss) => {
 })
 
 const legacyBossUfoCount = bosses.filter(
-  (boss) => boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+  (boss) => boss.group === 'basic' || boss.group === 'advanced',
 ).length
 
 export const specialUfo: UfoDefinition = {

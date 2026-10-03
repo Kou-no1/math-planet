@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { numericAreas } from '../data/numericAreas'
+import { numericAreaCorrectKey } from '../data/numericRewards'
 import globalCss from '../styles/global.css?raw'
 import {
   formatAnswerValue,
@@ -475,7 +477,7 @@ describe('question generation', () => {
     const additionPlanet = planets.find((planet) => planet.id === 'add')
     const subtractionPlanet = planets.find((planet) => planet.id === 'subtract')
     const divisionPlanet = planets.find((planet) => planet.id === 'divide')
-    expect(planets.map((planet) => planet.id)).toEqual(['add', 'subtract', 'multiply', 'divide'])
+    expect(planets.map((planet) => planet.id)).toEqual(['add', 'subtract', 'multiply', 'divide', 'decimal', 'fraction'])
     expect(additionPlanet?.status).toBe('live')
     expect(subtractionPlanet?.status).toBe('live')
     expect(divisionPlanet?.status).toBe('live')
@@ -2328,7 +2330,7 @@ describe('mastery, review, missions, and storage', () => {
     expect(coreShopItems).toHaveLength(20)
     expect(suitShopItems).toHaveLength(5)
     expect(shopBuddyDefinitions).toHaveLength(11)
-    expect(shopItems).toHaveLength(45)
+    expect(shopItems).toHaveLength(49)
     const prices = coreShopItems.map((item) => item.price)
     expect(prices.at(0)).toBe(50)
     expect(prices.at(-1)).toBe(10000)
@@ -2341,13 +2343,13 @@ describe('mastery, review, missions, and storage', () => {
       true,
     )
     expect(shopBuddyDefinitions.every((buddy) => buddy.source === 'shop')).toBe(true)
-    expect(phase15EffectItemIds).toHaveLength(12)
-    expect(shopEffectItemIds).toHaveLength(7)
+    expect(phase15EffectItemIds).toHaveLength(16)
+    expect(shopEffectItemIds).toHaveLength(9)
     expect(treasureEffectItemIds).toEqual([rainbowAuraEffectId])
-    expect(shopItems.filter((item) => item.kind === 'effect')).toHaveLength(12)
+    expect(shopItems.filter((item) => item.kind === 'effect')).toHaveLength(16)
     expect(
       shopEffectItemIds.map((itemId) => shopItems.find((item) => item.id === itemId)?.price),
-    ).toEqual([300, 350, 400, 350, 500, 500, 500])
+    ).toEqual([500, 500, 300, 350, 400, 350, 500, 500, 500])
     expect(shopItems.find((item) => item.id === rainbowAuraEffectId)?.availableInShop).toBe(false)
     expect(shopItems.find((item) => item.id === galaxySwirlEffectId)?.availableInShop).toBe(false)
     expect(shopItems.find((item) => item.id === addPlusBurstEffectId)?.availableInShop).toBe(false)
@@ -2629,7 +2631,7 @@ describe('mastery, review, missions, and storage', () => {
   })
 
   it('keeps custom reward origins extensible beyond the visible star filters', () => {
-    expect(customStarFilterOrder).toEqual(['all', 'add', 'subtract', 'multiply', 'divide'])
+    expect(customStarFilterOrder).toEqual(['all', 'add', 'subtract', 'multiply', 'divide', 'decimal', 'fraction'])
     expect(customRewardOrigins).toEqual([
       'all',
       'add',
@@ -3578,7 +3580,7 @@ describe('mastery, review, missions, and storage', () => {
   it('grants the all-gekimuzu reward once when the final boss clears', () => {
     const legacyBosses = bosses.filter(
       (boss) =>
-        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+        boss.group === 'basic' || boss.group === 'advanced',
     )
     const finalBoss = legacyBosses[legacyBosses.length - 1]
     let save: SaveData = createSaveWithPlayer()
@@ -3667,6 +3669,7 @@ describe('mastery, review, missions, and storage', () => {
           'multiplication-square': 40,
           'pi-multiplication': 40,
           development: 40,
+          ...Object.fromEntries(numericAreas.map((area) => [numericAreaCorrectKey(area.id), 20])),
         },
         bossProgress,
         ownedItems: shopItems

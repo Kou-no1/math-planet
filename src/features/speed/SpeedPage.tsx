@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
+import { MathQuestion } from '../../components/game/MathValue'
 import { KukucchiCharacter } from '../../components/character/KukucchiCharacter'
 import { AnswerControls } from '../../components/game/AnswerControls'
 import { GameFeedback } from '../../components/game/GameFeedback'
@@ -30,6 +31,10 @@ import { playCorrectSound } from '../../services/audioService'
 import { applySessionResult } from '../../services/resultService'
 import type { AnswerResult, AnswerValue, Question, ScoreState } from '../../types/game'
 import { createId } from '../../utils/id'
+import { isNumericPlanetId, numericAreasForPlanet, type NumericAreaId, type NumericPlanetId } from '../../data/numericAreas'
+import { generateAdaptiveNumericQuestion } from '../../game-engine/questions/numeric'
+import { factsWithResults } from '../../game-engine/mastery/mastery'
+import { resultIncorrectStreak } from '../../game-engine/school/schoolMode2'
 
 type SpeedPhase = 'ready' | 'running'
 
@@ -40,8 +45,14 @@ export type SpeedQuestionSource =
   | { planet: 'add'; selectedAreas: AdditionAreaId[] }
   | { planet: 'subtract'; selectedAreas: SubtractionAreaId[] }
   | { planet: 'divide'; selectedAreas: DivisionAreaId[] }
+  | { planet: NumericPlanetId; selectedAreas: NumericAreaId[]; facts?: Parameters<typeof generateAdaptiveNumericQuestion>[0]; schoolMode2Enabled?: boolean; recentIncorrectCount?: number }
 
 export function createSpeedQuestion(source: SpeedQuestionSource): Question {
+  if (source.planet === 'decimal' || source.planet === 'fraction') {
+    const validAreas = numericAreasForPlanet(source.planet).filter((area) => source.selectedAreas.includes(area.id))
+    const areas = validAreas.length ? validAreas : numericAreasForPlanet(source.planet)
+    return generateAdaptiveNumericQuestion(source.facts ?? {}, areas[Math.floor(Math.random() * areas.length)].id, source)
+  }
   if (source.planet === 'add') {
     const areas =
       source.selectedAreas.length > 0 ? source.selectedAreas : additionAreas.map((area) => area.id)
@@ -64,7 +75,7 @@ export function createSpeedQuestion(source: SpeedQuestionSource): Question {
   }
   return generateMultiplicationQuestion({
     answerMode: 'choice',
-    stages: source.selectedStages,
+    stages: 'selectedStages' in source ? source.selectedStages : allStages,
     minDifficulty: 1,
   })
 }
@@ -81,8 +92,9 @@ export function SpeedPage() {
   const isAdditionPlanet = searchParams.get('planet') === 'add'
   const isSubtractionPlanet = searchParams.get('planet') === 'subtract'
   const isDivisionPlanet = searchParams.get('planet') === 'divide'
-  const operationPlanet = isAdditionPlanet || isSubtractionPlanet || isDivisionPlanet
-  const backTo = isAdditionPlanet
+  const numericPlanet = isNumericPlanetId(searchParams.get('planet')) ? searchParams.get('planet') as NumericPlanetId : null
+  const operationPlanet = isAdditionPlanet || isSubtractionPlanet || isDivisionPlanet || Boolean(numericPlanet)
+  const backTo = numericPlanet ? `/planet/${numericPlanet}` : isAdditionPlanet
     ? '/planet/add'
     : isSubtractionPlanet
       ? '/planet/subtract'
@@ -95,6 +107,7 @@ export function SpeedPage() {
       ? savedSpeedSettings.selectedStages
       : [...defaultSpeedStages]
   const [phase, setPhase] = useState<SpeedPhase>('ready')
+  const [selectedNumericAreas, setSelectedNumericAreas] = useState<NumericAreaId[]>(numericAreasForPlanet(numericPlanet ?? 'decimal').map((area) => area.id))
   const [selectedStages, setSelectedStages] = useState<number[]>(initialStages)
   const [selectedAreas, setSelectedAreas] = useState<AdditionAreaId[]>(
     additionAreas.map((area) => area.id),
@@ -109,7 +122,7 @@ export function SpeedPage() {
   const [timeLeft, setTimeLeft] = useState(durationSeconds)
   const [question, setQuestion] = useState(() =>
     createSpeedQuestion(
-      isAdditionPlanet
+      numericPlanet ? { planet: numericPlanet, selectedAreas: selectedNumericAreas } : isAdditionPlanet
         ? { planet: 'add', selectedAreas: additionAreas.map((area) => area.id) }
         : isSubtractionPlanet
           ? {
@@ -140,9 +153,9 @@ export function SpeedPage() {
   )
 
   const createQuestion = useCallback(
-    () =>
+    (completedResults = results) =>
       createSpeedQuestion(
-        isAdditionPlanet
+        numericPlanet ? { planet: numericPlanet, selectedAreas: selectedNumericAreas, facts: factsWithResults(saveData.progress.facts, completedResults), schoolMode2Enabled: saveData.settings.schoolMode2Enabled, recentIncorrectCount: resultIncorrectStreak(completedResults) } : isAdditionPlanet
           ? { planet: 'add', selectedAreas }
           : isSubtractionPlanet
             ? { planet: 'subtract', selectedAreas: selectedSubtractionAreas }
@@ -151,6 +164,7 @@ export function SpeedPage() {
               : { planet: 'multiply', selectedStages: sortedStages },
       ),
     [
+      numericPlanet, selectedNumericAreas, saveData.progress.facts, saveData.settings.schoolMode2Enabled, results,
       isAdditionPlanet,
       isSubtractionPlanet,
       isDivisionPlanet,
@@ -190,7 +204,7 @@ export function SpeedPage() {
       results,
       finishedAt: new Date().toISOString(),
       details: {
-        planet: operationPlanet ?? 'multiply',
+        planet: numericPlanet ?? (isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : isDivisionPlanet ? 'divide' : 'multiply'),
         selectedStages: sortedStages.map(String),
         durationSeconds,
         answerMode: 'choice',
@@ -201,8 +215,8 @@ export function SpeedPage() {
           ...rawSummary,
           details: {
             ...rawSummary.details,
-            planet: isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : 'divide',
-            selectedAreas: isAdditionPlanet
+            planet: numericPlanet ?? (isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : 'divide'),
+            selectedAreas: numericPlanet ? selectedNumericAreas : isAdditionPlanet
               ? selectedAreas
               : isSubtractionPlanet
                 ? selectedSubtractionAreas
@@ -216,9 +230,11 @@ export function SpeedPage() {
     setSaveData(applied.save)
     navigate('/result', { state: { summary: applied.summary } })
   }, [
+    numericPlanet, selectedNumericAreas,
     isAdditionPlanet,
     isSubtractionPlanet,
     navigate,
+    isDivisionPlanet,
     operationPlanet,
     phase,
     results,
@@ -335,7 +351,7 @@ export function SpeedPage() {
     finishedRef.current = false
     setPhase('running')
     setTimeLeft(durationSeconds)
-    setQuestion(createQuestion())
+    setQuestion(createQuestion([]))
     setFeedback('idle')
     setResults([])
     setScoreState({
@@ -346,8 +362,8 @@ export function SpeedPage() {
     startedAtRef.current = Date.now()
   }
 
-  function nextQuestion() {
-    setQuestion(createQuestion())
+  function nextQuestion(completedResults = results) {
+    setQuestion(createQuestion(completedResults))
     setFeedback('idle')
     startedAtRef.current = Date.now()
   }
@@ -368,13 +384,14 @@ export function SpeedPage() {
       responseTimeMs,
       answeredAt: new Date().toISOString(),
     }
-    setResults((current) => [...current, result])
+    const nextResults = [...results, result]
+    setResults(nextResults)
     setScoreState((current) => applyAnswerToScore(current, correct, responseTimeMs))
     setFeedback(correct ? 'correct' : 'incorrect')
     if (correct) {
       playCorrectSound(saveData.settings.soundEnabled)
     }
-    window.setTimeout(nextQuestion, 550)
+    window.setTimeout(() => nextQuestion(nextResults), 550)
   }
 
   return (
@@ -405,7 +422,7 @@ export function SpeedPage() {
                   className="secondary-action compact-action"
                   type="button"
                   onClick={
-                    isAdditionPlanet
+                    numericPlanet ? () => setSelectedNumericAreas(selectedNumericAreas.length === numericAreasForPlanet(numericPlanet).length ? [numericAreasForPlanet(numericPlanet)[0].id] : numericAreasForPlanet(numericPlanet).map((area) => area.id)) : isAdditionPlanet
                       ? toggleAllAreas
                       : isSubtractionPlanet
                         ? toggleAllSubtractionAreas
@@ -416,13 +433,13 @@ export function SpeedPage() {
                 </button>
               </div>
               <div className="stage-chip-grid">
-                {(isAdditionPlanet
+                {(numericPlanet ? numericAreasForPlanet(numericPlanet) : isAdditionPlanet
                   ? additionAreas
                   : isSubtractionPlanet
                     ? subtractionAreas
                     : divisionAreas
                 ).map((area) => {
-                  const selected = isAdditionPlanet
+                  const selected = numericPlanet ? selectedNumericAreas.includes(area.id as NumericAreaId) : isAdditionPlanet
                     ? selectedAreas.includes(area.id as AdditionAreaId)
                     : isSubtractionPlanet
                       ? selectedSubtractionAreas.includes(area.id as SubtractionAreaId)
@@ -433,7 +450,7 @@ export function SpeedPage() {
                       key={area.id}
                       type="button"
                       onClick={() =>
-                        isAdditionPlanet
+                        numericPlanet ? setSelectedNumericAreas((current) => current.includes(area.id as NumericAreaId) ? current.length > 1 ? current.filter((id) => id !== area.id) : current : [...current, area.id as NumericAreaId]) : isAdditionPlanet
                           ? toggleArea(area.id as AdditionAreaId)
                           : isSubtractionPlanet
                             ? toggleSubtractionArea(area.id as SubtractionAreaId)
@@ -521,7 +538,7 @@ export function SpeedPage() {
                 <p className="welcome">たいむわーぷちゅう</p>
                 <h2>{durationSeconds}びょうちゃれんじ</h2>
                 <p className="title-line">
-                  {isAdditionPlanet
+                  {numericPlanet ? `${selectedNumericAreas.length}エリアから出題中` : isAdditionPlanet
                     ? `${selectedAreas.length}エリアからしゅつだいちゅう`
                     : isSubtractionPlanet
                       ? `${selectedSubtractionAreas.length}えりあからしゅつだいちゅう`
@@ -533,7 +550,7 @@ export function SpeedPage() {
 
           <section className="game-panel" aria-labelledby="speed-question">
             <h2 id="speed-question" className="question-prompt">
-              {question.prompt}
+              <MathQuestion question={question}/>
             </h2>
             <GameFeedback state={feedback} correctAnswer={question.answer} />
             <AnswerControls

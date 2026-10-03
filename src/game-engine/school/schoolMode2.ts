@@ -142,7 +142,7 @@ function recentIncorrectStreakOf(fact: MultiplicationFactProgress | undefined): 
 }
 
 function adaptiveWeight(
-  pair: MultiplicationFactPair | AdditionFactPair | SubtractionFactPair | DivisionFactPair,
+  pair: { difficulty: number },
   fact: MultiplicationFactProgress | undefined,
   recentIncorrectCount: number,
 ): number {
@@ -162,6 +162,25 @@ function adaptiveWeight(
   const difficultyBoost = 1 + pair.difficulty * 0.14
   const bandBoost = band === 'beginner' ? 1.35 : 1
   return weakBoost * recentMissBoost * difficultyBoost * bandBoost
+}
+
+export function selectAdaptiveCandidate<T extends { id: string; difficulty: number }>(
+  candidates: T[], facts: Record<string, MultiplicationFactProgress>,
+  recentIncorrectCount: number, rng: RandomSource = Math.random,
+): T {
+  if (candidates.length === 0) throw new RangeError('Adaptive question pool is empty')
+  const easiest = Math.min(...candidates.map((candidate) => candidate.difficulty))
+  const pool = recentIncorrectCount >= 2
+    ? candidates.filter((candidate) => candidate.difficulty === easiest) : candidates
+  const weighted = pool.map((candidate) => ({
+    candidate, weight: adaptiveWeight(candidate, facts[candidate.id], recentIncorrectCount),
+  }))
+  let cursor = rng() * weighted.reduce((sum, item) => sum + item.weight, 0)
+  for (const item of weighted) {
+    cursor -= item.weight
+    if (cursor <= 0) return item.candidate
+  }
+  return pool.at(-1)!
 }
 
 export function selectAdaptiveMultiplicationFact({

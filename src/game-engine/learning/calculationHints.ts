@@ -1,5 +1,7 @@
 import type { Question } from '../../types/game'
 import { parseFactId } from '../questions/factIds'
+import Fraction from 'fraction.js'
+import { getNumericAreaById, isNumericAreaId } from '../../data/numericAreas'
 
 export type CalculationHint = {
   title: string
@@ -14,6 +16,21 @@ export type CalculationHint = {
 export function calculationHint(question: Question): CalculationHint | null {
   const fact = parseFactId(question.id)
   if (!fact) return null
+  if (fact.numericOperands && isNumericAreaId(fact.areaId)) {
+    const [a, ad, b, bd] = fact.numericOperands
+    const area = getNumericAreaById(fact.areaId)
+    if (area.generator.operation === 'fraction') {
+      const common = Number(new Fraction(ad).lcm(bd).n)
+      return { title: '同じ大きさにそろえよう', groups: [], steps: [
+        `分母 ${ad} と ${bd} の最小公倍数は ${common}。`,
+        `${a}/${ad} は ${a * (common / ad)}/${common}、${b}/${bd} は ${b * (common / bd)}/${common} と同じ大きさ。`,
+        '分母をそろえて分子を計算し、分子と分母を同じ数でわって約分しよう。',
+      ] }
+    }
+    return { title: '小数の位をそろえよう', groups: [], steps: area.generator.calculation === 'multiply' || area.generator.calculation === 'divide'
+      ? [`小数を ${ad} 倍すると整数になる。`, '整数として計算してから、答えを同じ倍率でもとに戻そう。']
+      : [`どちらも 1/${ad} のまとまりで考えよう。`, '小数点をそろえて、同じ位どうしを計算しよう。'] }
+  }
   const { left, right, operation } = fact
   const places = ['1', '10', '100', '1000']
   if (operation === 'addition') {

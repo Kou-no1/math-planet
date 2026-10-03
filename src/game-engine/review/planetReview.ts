@@ -16,10 +16,13 @@ import {
   generateMultiplicationFactQuestion,
 } from '../questions/questionGenerator'
 import { parseFactId } from '../questions/factIds'
+import { isNumericAreaId, isNumericPlanetId, numericAreasForPlanet } from '../../data/numericAreas'
+import { generateAdaptiveNumericQuestion, numericQuestionFromFactId } from '../questions/numeric'
 
 export function questionForReviewFact(fact: MultiplicationFactProgress): Question | null {
   const parsed = parseFactId(fact.id)
   if (!parsed) return null
+  if (isNumericPlanetId(parsed.operation)) return numericQuestionFromFactId(fact.id)
   if (
     parsed.operation === 'addition' &&
     isAdditionAreaId(parsed.areaId) &&
@@ -64,6 +67,10 @@ export function createPlanetReviewQuestion({
     if (question) return question
   }
   const options = { schoolMode2Enabled, recentIncorrectCount }
+  if (isNumericPlanetId(planet))
+    return generateAdaptiveNumericQuestion(facts,
+      isNumericAreaId(fact?.areaId) && numericAreasForPlanet(planet).some((area) => area.id === fact.areaId)
+        ? fact.areaId : numericAreasForPlanet(planet)[0].id, options)
   if (planet === 'add')
     return generateAdaptiveAdditionQuestion(
       facts,

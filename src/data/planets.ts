@@ -1,6 +1,7 @@
 import type { QuestionCategory } from '../types/game'
+import { decimalAreas, fractionAreas, type NumericAreaDefinition, type NumericGeneratorSpec } from './numericAreas'
 
-export type PlanetId = 'multiply' | 'add' | 'subtract' | 'divide'
+export type PlanetId = 'multiply' | 'add' | 'subtract' | 'divide' | 'decimal' | 'fraction'
 export type PlanetStatus = 'live' | 'planned'
 
 export type AdditionAreaId =
@@ -46,6 +47,7 @@ export type DivisionGeneratorRule =
   | 'division-large'
 
 export type GeneratorSpec =
+  | NumericGeneratorSpec
   | {
       operation: 'multiplication'
       stages: number[]
@@ -107,7 +109,7 @@ export type DivisionAreaDefinition = {
   generator: Extract<GeneratorSpec, { operation: 'division' }>
 }
 
-export type AreaDefinition = AdditionAreaDefinition | SubtractionAreaDefinition | DivisionAreaDefinition
+export type AreaDefinition = AdditionAreaDefinition | SubtractionAreaDefinition | DivisionAreaDefinition | NumericAreaDefinition
 
 export type PlanetTheme = {
   primary: string
@@ -445,6 +447,22 @@ export const planets: PlanetDefinition[] = [
     },
     generator: divisionAreas[0].generator,
     areas: divisionAreas,
+  },
+  {
+    id: 'decimal', name: '小数のほし', shortName: '小数', status: 'live',
+    theme: {
+      primary: '#168b91', accent: '#f4d85d', surface: '#e8fbfa', text: '#073d40',
+      motif: '水晶の計量ラボ',
+    },
+    generator: decimalAreas[0].generator, areas: decimalAreas,
+  },
+  {
+    id: 'fraction', name: '分数のほし', shortName: '分数', status: 'live',
+    theme: {
+      primary: '#c84e79', accent: '#85e6c5', surface: '#fff0f5', text: '#57213c',
+      motif: '分けあう工房',
+    },
+    generator: fractionAreas[0].generator, areas: fractionAreas,
   },
 ]
 

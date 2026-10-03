@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
+import { MathQuestion } from '../../components/game/MathValue'
 import { DailyBudgetNoticeModal } from '../../components/common/DailyBudgetNoticeModal'
 import { StatPill } from '../../components/common/StatPill'
 import { AdditionBossSprite } from '../../components/collection/AdditionBossSprite'
@@ -50,6 +51,9 @@ import { applySessionResult } from '../../services/resultService'
 import type { AnswerResult, AnswerValue, Question, ScoreState } from '../../types/game'
 import type { BossDifficultyId } from '../../types/save'
 import { createId } from '../../utils/id'
+import { generateNumericQuestion } from '../../game-engine/questions/numeric'
+import { NumericBossSprite } from '../../components/collection/NumericMonsterSprite'
+import { isNumericPlanetId } from '../../data/numericAreas'
 
 type BossPhase = 'select' | 'ready' | 'running' | 'result'
 
@@ -74,6 +78,7 @@ function pick<T>(items: T[]): T {
 }
 
 function createBossQuestion(boss: BossDefinition, difficulty: BossDifficulty): Question {
+  if (boss.numericAreaId) return generateNumericQuestion(boss.numericAreaId)
   if (boss.additionAreaId) {
     return generateAdditionQuestion(boss.additionAreaId)
   }
@@ -102,6 +107,8 @@ function formatSeconds(milliseconds: number): string {
 }
 
 function bossBackTo(boss: BossDefinition | null, group: BossDefinition['group']): string {
+  if (isNumericPlanetId(boss?.group)) return `/planet/${boss.group}`
+  if (isNumericPlanetId(group)) return `/planet/${group}`
   if (!boss) {
     if (group === 'addition') {
       return '/planet/add'
@@ -195,6 +202,7 @@ export function BossBattlePage({ group = 'basic' }: { group?: BossDefinition['gr
         finishedAt: new Date().toISOString(),
         details: {
           bossId: boss.id,
+          ...(isNumericPlanetId(boss.group) ? { planet: boss.group, areaId: boss.numericAreaId } : {}),
           bossDifficulty: difficulty.id,
           answerMode: 'choice',
         },
@@ -428,6 +436,8 @@ export function BossBattlePage({ group = 'basic' }: { group?: BossDefinition['gr
                 <SubtractionBossSprite boss={activeBoss} compact className="boss-hud-sprite" />
               ) : activeDivisionBoss ? (
                 <DivisionBossSprite boss={activeBoss} compact className="boss-hud-sprite" />
+              ) : activeBoss.numericAreaId ? (
+                <NumericBossSprite boss={activeBoss} compact className="boss-hud-sprite" />
               ) : (
                 <span aria-hidden="true">{activeBoss.emoji}</span>
               )}
@@ -453,7 +463,7 @@ export function BossBattlePage({ group = 'basic' }: { group?: BossDefinition['gr
             </p>
           )}
           <h2 id="boss-question" className="question-prompt">
-            {question.prompt}
+              <MathQuestion question={question}/>
           </h2>
           <GameFeedback state={feedback} correctAnswer={question.answer} />
           <AnswerControls
@@ -623,6 +633,8 @@ export function BossBattlePage({ group = 'basic' }: { group?: BossDefinition['gr
                 />
               ) : divisionBoss ? (
                 <DivisionBossSprite boss={boss} locked={!unlocked} className="boss-card-sprite" />
+              ) : boss.numericAreaId ? (
+                <NumericBossSprite boss={boss} locked={!unlocked} className="boss-card-sprite" />
               ) : (
                 <span className="boss-emoji" aria-hidden="true">
                   {unlocked ? boss.emoji : '◆'}
@@ -649,7 +661,9 @@ export function BossBattlePage({ group = 'basic' }: { group?: BossDefinition['gr
                 <div className="boss-ufo-preview">
                   <UfoBadge ufo={rewardUfo} locked={!ownsRewardUfo} compact />
                   <small>
-                    {easyOperation ? 'げきむずはじめてくりあ：' : 'げきムズ初回クリア報酬：'}
+                    {boss.numericAreaId
+                      ? 'ノーマル初回クリア報酬：'
+                      : easyOperation ? 'げきむずはじめてくりあ：' : 'げきムズ初回クリア報酬：'}
                     {ownsRewardUfo ? rewardUfo.name : '？？？'}
                   </small>
                 </div>

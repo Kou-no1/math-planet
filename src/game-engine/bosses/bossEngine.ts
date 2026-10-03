@@ -14,6 +14,8 @@ import {
 } from '../../data/bosses'
 import type { BossAdvancedCategory, BossDefinition } from '../../data/bosses'
 import type { KeyTypeId } from '../../data/keys'
+import { numericAreaCorrectKey, numericMasterTitle } from '../../data/numericRewards'
+import { isNumericPlanetId } from '../../data/numericAreas'
 import { galaxySwirlEffectId } from '../../data/shopItems'
 import { specialUfoId } from '../../data/ufos'
 import { addCollectionRecords } from '../collection/collectionRecords'
@@ -117,6 +119,7 @@ function areBasicStageBossesCleared(save: SaveData): boolean {
 }
 
 export function isBossUnlocked(boss: BossDefinition, save: SaveData): boolean {
+  if (boss.numericAreaId) return (save.progress.categoryCorrect[numericAreaCorrectKey(boss.numericAreaId)] ?? 0) >= bossUnlockRequiredCorrect
   if (boss.id === 'boss-all-kuku') {
     return areBasicStageBossesCleared(save)
   }
@@ -144,6 +147,7 @@ export function isBossUnlocked(boss: BossDefinition, save: SaveData): boolean {
 }
 
 export function countCorrectForBossUnlock(boss: BossDefinition, save: SaveData): number | null {
+  if (boss.numericAreaId) return save.progress.categoryCorrect[numericAreaCorrectKey(boss.numericAreaId)] ?? 0
   if (boss.id === 'boss-all-kuku') {
     return null
   }
@@ -209,7 +213,7 @@ function hasAllFastClears(save: SaveData): boolean {
   return bosses
     .filter(
       (boss) =>
-        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+        boss.group === 'basic' || boss.group === 'advanced',
     )
     .every((boss) => getDifficultyProgress(save, boss.id, 'fast').cleared)
 }
@@ -218,7 +222,7 @@ function hasAllGekimuzuClears(save: SaveData): boolean {
   return bosses
     .filter(
       (boss) =>
-        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+        boss.group === 'basic' || boss.group === 'advanced',
     )
     .every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
 }
@@ -313,6 +317,7 @@ export function keyRewardsForBossClear(
   if (boss.group === 'division') {
     return []
   }
+  if (isNumericPlanetId(boss.group)) return []
   return ['rainbow']
 }
 
@@ -534,7 +539,7 @@ export function applyBossClearReward(
       ? divisionLegendTitle
       : null,
   ].filter((title): title is string => Boolean(title))
-  const withDivisionTitles: SaveData =
+  let withDivisionTitles: SaveData =
     divisionTitlesToGrant.length > 0 && withSubtractionTitles.player
       ? {
           ...withSubtractionTitles,
@@ -557,6 +562,17 @@ export function applyBossClearReward(
         }
       : withSubtractionTitles
 
+  const numericTitlesToGrant: string[] = []
+  if (isNumericPlanetId(boss.group) && withDivisionTitles.player) {
+    const planet = boss.group
+    const planetBosses = bosses.filter((entry) => entry.group === planet)
+    for (const level of ['normal', 'gekimuzu'] as const) {
+      const title = numericMasterTitle(planet, level === 'gekimuzu')
+      if (planetBosses.every((entry) => getDifficultyProgress(withDivisionTitles, entry.id, level).cleared) && !hasTitle(withDivisionTitles.player, title)) numericTitlesToGrant.push(title)
+    }
+    withDivisionTitles = { ...withDivisionTitles, player: grantPlayerTitles(withDivisionTitles.player, numericTitlesToGrant), progress: { ...withDivisionTitles.progress,
+      collectionRecords: addCollectionRecords(withDivisionTitles.progress.collectionRecords, numericTitlesToGrant.map((title) => ({ kind: 'title', id: titleRecordId(title), acquiredAt: clearedAt, method: `${planet}全エリアボス` }))) } }
+  }
   const currentOwnedUfos = withDivisionTitles.progress.ownedUfos
   const currentOwnedItems = withDivisionTitles.progress.ownedItems
   const shouldGrantGrandReward =
@@ -579,6 +595,7 @@ export function applyBossClearReward(
           ...additionTitlesToGrant,
           ...subtractionTitlesToGrant,
           ...divisionTitlesToGrant,
+          ...numericTitlesToGrant,
           ...(finalTitle ? [finalTitle] : []),
         ]),
       ),
@@ -601,6 +618,7 @@ export function applyBossClearReward(
           ...additionTitlesToGrant,
           ...subtractionTitlesToGrant,
           ...divisionTitlesToGrant,
+          ...numericTitlesToGrant,
         ]),
       ),
       grandReward: false,
@@ -647,6 +665,7 @@ export function applyBossClearReward(
         ...additionTitlesToGrant,
         ...subtractionTitlesToGrant,
         ...divisionTitlesToGrant,
+        ...numericTitlesToGrant,
         ...(finalTitle ? [finalTitle] : []),
       ]),
     ),

@@ -1,5 +1,6 @@
 import { shopBuddyDefinitions } from './buddies'
 import type { RewardOrigin } from '../types/rewardOrigin'
+import { numericEffectItems } from './numericRewards'
 
 export type ShopItemKind =
   | 'wear'
@@ -512,6 +513,7 @@ export const additionalEffectItems: ShopItem[] = [
 ]
 
 export const shopEffectItemIds = [
+  ...numericEffectItems.filter((item) => item.availableInShop !== false).map((item) => item.id),
   'comet-ship',
   'sparkle-trail',
   'comet-burst',
@@ -523,6 +525,7 @@ export const shopEffectItemIds = [
 export const treasureEffectItemIds = [rainbowAuraEffectId]
 export const bossRewardEffectItemIds = [galaxySwirlEffectId, addPlusBurstEffectId, subMinusFlashEffectId, divideFlashEffectId]
 export const phase15EffectItemIds = [
+  ...numericEffectItems.filter((item) => item.availableInShop === false).map((item) => item.id),
   ...shopEffectItemIds,
   ...treasureEffectItemIds,
   ...bossRewardEffectItemIds,
@@ -533,6 +536,7 @@ export const shopItems: ShopItem[] = [
   ...suitShopItems,
   ...buddyShopItems,
   ...additionalEffectItems,
+  ...numericEffectItems,
 ]
 
 export function countsTowardShopTier(item: ShopItem): boolean {

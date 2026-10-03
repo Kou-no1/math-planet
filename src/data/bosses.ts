@@ -1,8 +1,11 @@
 import type { BossDifficultyId } from '../types/save'
 import { defaultMinDifficultyByBossDifficulty } from './factDifficulty'
 import type { AdditionAreaId, DivisionAreaId, SubtractionAreaId } from './planets'
+import { numericBosses } from './numericRewards'
+import type { NumericAreaId } from './numericAreas'
+import type { RewardOrigin } from '../types/rewardOrigin'
 
-export type BossGroup = 'basic' | 'advanced' | 'addition' | 'subtraction' | 'division'
+export type BossGroup = 'basic' | 'advanced' | 'addition' | 'subtraction' | 'division' | 'decimal' | 'fraction'
 export type BossAdvancedCategory = 'square' | 'pi' | 'development'
 
 export const advancedBossCategoryLabels: Record<BossAdvancedCategory, string> = {
@@ -29,6 +32,8 @@ export type BossDifficulty = {
 }
 
 export type BossDefinition = {
+  numericAreaId?: NumericAreaId
+  origin?: RewardOrigin
   id: string
   no: number
   group: BossGroup
@@ -653,6 +658,7 @@ export const bosses: BossDefinition[] = [
     difficultyOverrides: seed.difficultyOverrides,
     rewards: createDivisionRewards(seed),
   })),
+  ...numericBosses,
 ]
 
 const itemKinds: BossLimitedItem['kind'][] = ['wear', 'hat', 'furniture', 'background']
@@ -660,7 +666,7 @@ const itemKinds: BossLimitedItem['kind'][] = ['wear', 'hat', 'furniture', 'backg
 export const bossLimitedItems: BossLimitedItem[] = bosses
   .filter(
     (boss) =>
-      boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+      boss.group === 'basic' || boss.group === 'advanced',
   )
   .flatMap((boss) =>
     bossItemDifficultyIds.map((difficulty, difficultyIndex) => ({

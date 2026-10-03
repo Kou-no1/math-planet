@@ -1,7 +1,7 @@
 import type { DailyMission } from '../../types/game'
 import type { SaveData } from '../../types/save'
 import { getLocalDateKey } from '../../utils/date'
-import type { PlanetId } from '../../data/planets'
+import { planets, type PlanetId } from '../../data/planets'
 import { getPlanetLearningTarget, planetOperations } from '../learning/planetLearning'
 import { factFromResult } from '../questions/factIds'
 import type { GameSessionSummary } from '../../types/game'
@@ -90,18 +90,30 @@ export function updateMissionProgress(
 
 export function refreshMissionsIfNeeded(save: SaveData, date = new Date()): SaveData {
   const key = getLocalDateKey(date)
-  if (
-    save.progress.missionDate === key &&
-    save.progress.missions.some((mission) => mission.operation)
-  ) {
-    return save
+  if (save.progress.missionDate === key && save.progress.missions.some((mission) => mission.operation)) {
+    const missing = planets.filter(
+      (planet) => !save.progress.missions.some(
+        (mission) => mission.operation === planetOperations[planet.id],
+      ),
+    )
+    if (!missing.length) return save
+    return {
+      ...save,
+      progress: {
+        ...save.progress,
+        missions: [
+          ...save.progress.missions,
+          ...missing.flatMap((planet) => generateDailyMissions(save, date, planet.id)),
+        ],
+      },
+    }
   }
   return {
     ...save,
     progress: {
       ...save.progress,
       missionDate: key,
-      missions: (['add', 'subtract', 'multiply', 'divide'] as PlanetId[]).flatMap((planet) =>
+      missions: planets.map((planet) => planet.id).flatMap((planet) =>
         generateDailyMissions(save, date, planet),
       ),
     },

@@ -3,6 +3,7 @@ import { allGekimuzuTitle, bosses } from '../../data/bosses'
 import { buddyDefinitions } from '../../data/buddies'
 import { shopItems } from '../../data/shopItems'
 import { ufoDefinitions } from '../../data/ufos'
+import { numericMonsterDefinitions, isNumericMonsterOwned } from '../../data/numericRewards'
 import type { SaveData } from '../../types/save'
 import {
   addCollectionRecords,
@@ -43,7 +44,7 @@ export function hasAllMonstersForFinalTitle(save: SaveData): boolean {
       isAdvancedMonsterOwned(save.progress.categoryCorrect, monster) ||
       Boolean(getCollectionRecord(save.progress.collectionRecords, 'advanced-monster', monster.id)),
   )
-  return hasBasicMonsters && hasAdvancedMonsters
+  return hasBasicMonsters && hasAdvancedMonsters && numericMonsterDefinitions.every((monster) => isNumericMonsterOwned(monster, save.progress.categoryCorrect))
 }
 
 export function hasAllBossesForFinalTitle(save: SaveData): boolean {

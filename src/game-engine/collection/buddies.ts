@@ -5,6 +5,7 @@ import {
   isSubtractionMonsterOwned,
 } from '../../data/subtractionMonsters'
 import { getDivisionMonsterById, isDivisionMonsterOwned } from '../../data/divisionMonsters'
+import { getNumericMonsterById, isNumericMonsterOwned } from '../../data/numericRewards'
 import type { SaveData } from '../../types/save'
 import { collectionRecordId, getCollectionRecord } from './collectionRecords'
 
@@ -81,6 +82,10 @@ export function isDedicatedBuddyOwned(save: SaveData, buddyId: string): boolean 
 }
 
 export function isBuddySelectionOwned(save: SaveData, selectionId: string | null): boolean {
+  if (selectionId?.startsWith('numeric-monster:')) {
+    const definition = getNumericMonsterById(selectionId.slice('numeric-monster:'.length))
+    return Boolean(definition && isNumericMonsterOwned(definition, save.progress.categoryCorrect))
+  }
   if (!selectionId) {
     return true
   }

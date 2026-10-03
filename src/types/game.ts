@@ -1,6 +1,7 @@
 export type LearningLevel = 'first' | 'practicing' | 'challenge' | 'advanced'
 
-export type ArithmeticOperation = 'multiplication' | 'addition' | 'subtraction' | 'division'
+export type ArithmeticOperation =
+  | 'multiplication' | 'addition' | 'subtraction' | 'division' | 'decimal' | 'fraction'
 
 export type QuestionCategory =
   | 'multiplication-basic'
@@ -21,6 +22,16 @@ export type QuestionCategory =
   | 'division-no-remainder'
   | 'division-with-remainder'
   | 'division-large'
+  | 'decimal-add-tenths'
+  | 'decimal-subtract-tenths'
+  | 'decimal-add-hundredths'
+  | 'decimal-subtract-hundredths'
+  | 'decimal-multiply-integer'
+  | 'decimal-divide-integer'
+  | 'fraction-add-same'
+  | 'fraction-subtract-same'
+  | 'fraction-add-unlike'
+  | 'fraction-subtract-unlike'
   | 'two-digit-times-one-digit'
   | 'two-digit-times-two-digit'
   | 'divisors'
@@ -35,7 +46,9 @@ export type RemainderAnswerValue = {
   quotient: number
   remainder: number
 }
-export type AnswerValue = number | string | RemainderAnswerValue
+export type DecimalAnswerValue = { kind: 'decimal'; value: string }
+export type FractionAnswerValue = { kind: 'fraction'; numerator: number; denominator: number }
+export type AnswerValue = number | string | RemainderAnswerValue | DecimalAnswerValue | FractionAnswerValue
 export type GameMode =
   | 'learn'
   | 'speed'

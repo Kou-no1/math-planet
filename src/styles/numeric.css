@@ -1,0 +1,272 @@
+.fraction-value {
+  display: inline-grid;
+  grid-template-rows: 1fr 1fr;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.05;
+  min-width: 1.2em;
+  padding: 0.08em 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+.fraction-value > span:first-child {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 0.12em;
+}
+.fraction-value > span:last-child {
+  padding-top: 0.12em;
+}
+.fraction-expression {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5em;
+}
+.fraction-models {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.fraction-model {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.fraction-model-bar {
+  display: grid;
+  height: 36px;
+  border: 2px solid #9cebd2;
+}
+.fraction-model-bar i {
+  border-right: 1px solid #49737b;
+  background: #173e45;
+}
+.fraction-model-bar i.filled {
+  background: #e376a4;
+}
+.fraction-model-bar i:last-child {
+  border-right: none;
+}
+.choice-button:has(.fraction-value) {
+  min-height: 86px;
+}
+.choice-button .fraction-value {
+  font-size: 2rem;
+}
+.numeric-monster-sprite {
+  width: 104px;
+  height: 112px;
+  flex: none;
+}
+.numeric-boss-sprite {
+  width: 128px;
+  height: 136px;
+}
+.numeric-boss-sprite.compact {
+  width: 72px;
+  height: 78px;
+}
+
+.custom-character-window {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+.custom-character-window .ufo-ring {
+  width: var(--kukucchi-ring-size);
+}
+.custom-character-window .ufo-cockpit {
+  width: calc(var(--kukucchi-ring-size) * var(--kukucchi-cockpit-width-ratio));
+  height: calc(var(--kukucchi-ring-size) * var(--kukucchi-cockpit-height-ratio));
+}
+.custom-character-window .kukucchi-body {
+  width: calc(var(--kukucchi-ring-size) * var(--kukucchi-body-width-ratio));
+}
+
+[class*='ufo-badge-decimal-'] .ufo-badge-body,
+[class*='kukucchi-ufo-decimal-'] .ufo-ship {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 10px,
+      #f9db6c99 11px 13px,
+      transparent 14px 24px
+    ),
+    linear-gradient(90deg, #11676e, #7de5df, #218188);
+  border-color: #c8f8f3;
+}
+[class*='ufo-badge-fraction-'] .ufo-badge-body,
+[class*='kukucchi-ufo-fraction-'] .ufo-ship {
+  background: repeating-conic-gradient(from 45deg, #e376a4 0deg 85deg, #ffe0ed 86deg 90deg);
+  border-color: #a0efcf;
+}
+[class*='ufo-badge-decimal-'] .ufo-badge-dome,
+[class*='kukucchi-ufo-decimal-'] .ufo-cockpit {
+  background: linear-gradient(145deg, #dffff8d9, #38b9be66);
+  border-color: #bbf5f2;
+}
+[class*='ufo-badge-fraction-'] .ufo-badge-dome,
+[class*='kukucchi-ufo-fraction-'] .ufo-cockpit {
+  background: linear-gradient(145deg, #fff1f9d9, #e376a466);
+  border-color: #ffe0ed;
+}
+.ufo-badge-decimal-crystal .ufo-badge-body,
+.kukucchi-ufo-decimal-crystal .ufo-ship {
+  background: linear-gradient(135deg, #168b91 25%, #bbf5f2 26% 49%, #38b9be 50% 74%, #f9db6c 75%);
+}
+.ufo-badge-decimal-precision,
+.kukucchi-ufo-decimal-precision .ufo-ship {
+  filter: drop-shadow(0 0 8px #7de5df);
+}
+.ufo-badge-fraction-share .ufo-badge-body,
+.kukucchi-ufo-fraction-share .ufo-ship {
+  background: linear-gradient(
+    90deg,
+    #ac496f 0 32%,
+    #ffe0ed 33% 35%,
+    #e376a4 36% 64%,
+    #ffe0ed 65% 67%,
+    #ac496f 68%
+  );
+}
+.ufo-badge-fraction-harmony,
+.kukucchi-ufo-fraction-harmony .ufo-ship {
+  filter: drop-shadow(0 0 8px #a0efcf);
+}
+
+.kukucchi-effect-decimal-light .kukucchi-effect-layer,
+.kukucchi-effect-decimal-burst .kukucchi-effect-layer,
+.kukucchi-effect-fraction-light .kukucchi-effect-layer,
+.kukucchi-effect-fraction-burst .kukucchi-effect-layer {
+  display: block;
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.kukucchi-effect-decimal-light .kukucchi-effect-layer::before,
+.kukucchi-effect-decimal-burst .kukucchi-effect-layer::before,
+.kukucchi-effect-fraction-light .kukucchi-effect-layer::before,
+.kukucchi-effect-fraction-burst .kukucchi-effect-layer::before {
+  content: '';
+  position: absolute;
+  inset: 5%;
+  border: 3px solid #7de5df99;
+  animation: numericLightPulse 3s ease-in-out infinite;
+}
+.kukucchi-effect-decimal-light .kukucchi-effect-layer::before {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 18px,
+    #f9db6c88 19px 21px,
+    transparent 22px 40px
+  );
+  border-width: 0 0 3px;
+}
+.kukucchi-effect-decimal-burst .kukucchi-effect-layer::before {
+  transform: rotate(45deg);
+  border-color: #bbf5f2;
+  border-radius: 8px;
+}
+.kukucchi-effect-fraction-light .kukucchi-effect-layer::before {
+  border-radius: 50%;
+  border-style: dashed;
+  border-color: #e376a4;
+}
+.kukucchi-effect-fraction-burst .kukucchi-effect-layer::before {
+  border-radius: 50%;
+  border: 7px dashed #a0efcf;
+  background: conic-gradient(
+    #e376a433 0 90deg,
+    transparent 90deg 180deg,
+    #e376a433 180deg 270deg,
+    transparent 270deg
+  );
+}
+@keyframes numericLightPulse {
+  0%,
+  100% {
+    opacity: 0.25;
+    scale: 0.85;
+  }
+  50% {
+    opacity: 0.85;
+    scale: 1.06;
+  }
+}
+.kukucchi.effect-low [data-preview-layer='effect']::before {
+  animation-duration: 6s;
+}
+.kukucchi.effect-static [data-preview-layer='effect']::before {
+  animation: none;
+  opacity: 0.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-preview-layer='effect']::before {
+    animation: none !important;
+  }
+}
+@media (max-width: 600px) {
+  .home-planet-orb {
+    font-size: 2.2rem;
+  }
+  .fraction-expression {
+    font-size: 1.8rem;
+  }
+  .choice-button .fraction-value {
+    font-size: 1.55rem;
+  }
+  .custom-star-filter {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 860px) {
+  .home-planet-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .home-planet-card {
+    grid-template-columns: 1fr;
+    min-height: 164px;
+    padding: 12px;
+    gap: 8px;
+  }
+  .home-planet-orb {
+    width: 60px;
+    height: 60px;
+    font-size: 1.9rem;
+  }
+  .home-planet-card .planet-copy strong {
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+  }
+  .home-planet-card .planet-copy small {
+    font-size: 0.72rem;
+  }
+  .home-strip-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .home-strip-stats .stat-pill {
+    gap: 4px;
+    padding: 6px;
+    min-width: 0;
+  }
+  .home-strip-stats .stat-icon {
+    display: none;
+  }
+  .home-strip-stats .stat-value {
+    font-size: 1.15rem;
+  }
+  .top-bar:has(.top-help-button) {
+    grid-template-columns: 42px minmax(0, 1fr) 92px;
+  }
+  .top-help-button {
+    min-width: 0;
+    padding: 0 7px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+}
+@media (max-width: 380px) {
+  .home-planet-card .planet-copy strong {
+    font-size: 0.875rem;
+  }
+}

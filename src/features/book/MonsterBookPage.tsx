@@ -5,6 +5,8 @@ import { AdditionMonsterSprite } from '../../components/collection/AdditionMonst
 import { AdvancedMonsterSprite } from '../../components/collection/AdvancedMonsterSprite'
 import { BuddySprite } from '../../components/collection/BuddySprite'
 import { DivisionMonsterSprite } from '../../components/collection/DivisionMonsterSprite'
+import { NumericMonsterSprite, NumericBossSprite } from '../../components/collection/NumericMonsterSprite'
+import { numericMonsterDefinitions, isNumericMonsterOwned, numericAreaCorrectKey } from '../../data/numericRewards'
 import { KeyIcon } from '../../components/collection/KeyIcon'
 import { MonsterSprite } from '../../components/collection/MonsterSprite'
 import { SubtractionMonsterSprite } from '../../components/collection/SubtractionMonsterSprite'
@@ -466,7 +468,7 @@ export function MonsterBookPage() {
         </>
       ) : null}
 
-          <section className="collection-section" aria-labelledby="division-monsters-title">
+          {activeTab === 'monsters' ? <section className="collection-section" aria-labelledby="division-monsters-title">
             <h2 id="division-monsters-title">わりざんのなかま</h2>
             <div className="monster-grid book-grid">
               {divisionMonsterDefinitions.map((monster) => {
@@ -500,8 +502,19 @@ export function MonsterBookPage() {
                 )
               })}
             </div>
-          </section>
-
+          </section> : null}
+      {activeTab === 'monsters' ? (['decimal', 'fraction'] as const).map((planet) => <section className="collection-section" key={planet} aria-label={`${planet === 'decimal' ? '小数' : '分数'}のなかま`}>
+        <h2>{planet === 'decimal' ? '小数' : '分数'}のなかま</h2>
+        <div className="monster-grid book-grid">
+          {numericMonsterDefinitions.filter((monster) => monster.origin === planet).map((monster) => {
+            const owned = isNumericMonsterOwned(monster, saveData.progress.categoryCorrect)
+            return <article className={`book-card ${owned ? '' : 'silhouette'}`} key={monster.id} {...cardAction({ name: owned ? monster.name : '？？？', description: monster.description, acquiredAt: null, method: `${monster.threshold}問正解`, owned })}>
+              <NumericMonsterSprite monster={monster} locked={!owned} className="book-pixel-icon"/>
+              <h2>{owned ? monster.name : '？？？'}</h2><p>{Math.min(saveData.progress.categoryCorrect[numericAreaCorrectKey(monster.areaId)] ?? 0, monster.threshold)}/{monster.threshold}問</p>
+            </article>
+          })}
+        </div>
+      </section>) : null}
       {activeTab === 'buddies' ? (
         <>
           <section className="collection-section" aria-labelledby="overcome-buddies-title">
@@ -641,14 +654,14 @@ export function MonsterBookPage() {
                 })}
               >
                 <span className="boss-no">B-{String(boss.no).padStart(2, '0')}</span>
-                <TrophySprite
+                {boss.numericAreaId ? <NumericBossSprite boss={boss} locked={!cleared} className="book-pixel-icon"/> : <TrophySprite
                   danLabel={bossDanLabel(boss)}
                   accentDan={bossAccentDan(boss)}
                   difficulty={displayDifficulty}
                   kind="trophy"
                   locked={!cleared}
                   className="book-pixel-icon"
-                />
+                />}
                 <h2>{cleared ? boss.label : '？？？'}</h2>
                 <small>
                   {difficultyIds

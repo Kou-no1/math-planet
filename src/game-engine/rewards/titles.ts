@@ -16,6 +16,9 @@ import { additionRocketDifficulties } from '../../data/additionRocket'
 import { divisionRocketDifficulties } from '../../data/divisionRocket'
 import { subtractionRocketDifficulties } from '../../data/subtractionRocket'
 import type { RewardOrigin } from '../../types/rewardOrigin'
+import { numericMasterTitle } from '../../data/numericRewards'
+import { numericRocketDifficulties } from '../../data/numericRocket'
+import { isNumericPlanetId } from '../../data/numericAreas'
 
 type TitleRule = {
   id: string
@@ -119,6 +122,14 @@ function maxCorrectComboForDivisionArea(summary: GameSessionSummary, areaId: str
 }
 
 export const titleRules: TitleRule[] = [
+  ...(['decimal', 'fraction'] as const).flatMap((planet): TitleRule[] => [
+    { id: `${planet}-first-step`, label: `${planet === 'decimal' ? '小数' : '分数'}のたまご`, description: 'この星で初めて問題を解いたしるし', origin: planet,
+      canEarn: (summary) => summary.results.some((result) => result.questionId.startsWith(`${planet}:`)) },
+    { id: `${planet}-no-miss`, label: `${planet === 'decimal' ? '小数' : '分数'}のせいびし`, description: 'この星で10問以上を全問正解したしるし', origin: planet,
+      canEarn: (summary) => summary.totalQuestions >= 10 && summary.accuracy === 100 && summary.results.every((result) => result.questionId.startsWith(`${planet}:`)) },
+    ...numericRocketDifficulties(planet).map((difficulty): TitleRule => ({ id: `${planet}-rocket-${difficulty.id}`, label: difficulty.title, description: `${difficulty.label}のロケットをクリアしたしるし`, origin: planet,
+      canEarn: (summary) => summary.mode === 'rocket' && summary.details?.planet === planet && summary.details?.numericRocketDifficulty === difficulty.id && summary.totalQuestions >= 14 })),
+  ]),
   {
     id: 'first-step',
     origin: 'all',
@@ -282,7 +293,7 @@ export function getTitleDefinitions(): TitleDefinition[] {
       id: `boss:${boss.id}:${difficultyId}`,
       label: reward.title,
       origin:
-        boss.group === 'addition'
+        isNumericPlanetId(boss.group) ? boss.group : boss.group === 'addition'
           ? ('add' as const)
           : boss.group === 'subtraction'
             ? ('sub' as const)
@@ -297,6 +308,9 @@ export function getTitleDefinitions(): TitleDefinition[] {
     })),
   )
   titleDefinitionsCache = [
+    ...(['decimal', 'fraction'] as const).flatMap((planet) => [false, true].map((legendary) => ({
+      id: `master:${planet}:${legendary ? 'gekimuzu' : 'normal'}`, label: numericMasterTitle(planet, legendary), description: `この星の全エリアボスを${legendary ? 'げきムズで' : ''}クリアしたしるし`, method: '全エリアボス', origin: planet,
+    }))),
     ...ruleDefinitions,
     ...bossDefinitions,
     {
@@ -388,6 +402,14 @@ export function getTitleEmblemDefinition(title: string | null | undefined): Titl
   }
 
   title = titleLabel(title)
+  const numericTitle = getTitleDefinitions().find((entry) => entry.label === title && isNumericPlanetId(entry.origin))
+  if (numericTitle) {
+    const decimal = numericTitle.origin === 'decimal'
+    const legendary = title.includes('レジェンド') || title.includes('げきムズ')
+    return { family: legendary ? 'legendary' : title.includes('マスター') ? 'master' : 'boss-advanced',
+      rarity: legendary ? 'legendary' : title.includes('マスター') || title.includes('キャプテン') ? 'epic' : title.includes('たまご') ? 'common' : 'rare',
+      motif: decimal ? '0.1' : '1/2', primary: decimal ? '#38b9be' : '#e376a4', secondary: decimal ? '#0d454e' : '#652a4d', accent: decimal ? '#f9db6c' : '#a0efcf' }
+  }
 
   if (title === allGekimuzuTitle) {
     return {

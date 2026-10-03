@@ -22,6 +22,9 @@ import { PlayerCommandPanel, WeakFactsPanel } from '../home/HomePanels'
 import { planetExpeditions } from '../../data/planetExpeditions'
 import { expeditionProgress } from '../../game-engine/learning/expeditions'
 import { getPlanetLearningTarget } from '../../game-engine/learning/planetLearning'
+import { isNumericPlanetId, numericAreasForPlanet } from '../../data/numericAreas'
+import { NumericBossSprite } from '../../components/collection/NumericMonsterSprite'
+import { planets } from '../../data/planets'
 
 type PlanetMode = {
   label: string
@@ -33,7 +36,7 @@ type PlanetMode = {
   callToAction?: string
 }
 
-const planetIds: PlanetId[] = ['add', 'subtract', 'multiply', 'divide']
+const planetIds: PlanetId[] = planets.map((planet) => planet.id)
 
 const multiplyModes: PlanetMode[] = [
   {
@@ -184,6 +187,11 @@ const divisionModes: PlanetMode[] = [
 ]
 
 function modesForPlanet(planetId: PlanetId): PlanetMode[] {
+  if (isNumericPlanetId(planetId)) return [
+    { label: 'おぼえる', href: `/learn?planet=${planetId}`, ready: true, icon: planetId === 'decimal' ? '0.1' : '1/2', badge: '01', subtitle: `${numericAreasForPlanet(planetId).length}エリアを練習` },
+    { label: 'あそぶ', href: `/rocket?planet=${planetId}`, ready: true, icon: 'VS', badge: '02', subtitle: `${planetId === 'decimal' ? '小数' : '分数'}ロケット` },
+    { label: 'スピード', href: `/speed?planet=${planetId}`, ready: true, icon: '30', badge: '03', subtitle: 'タイムチャレンジ' },
+  ]
   if (planetId === 'add') {
     return additionModes
   }
@@ -201,6 +209,8 @@ function isPlanetId(value: string | undefined): value is PlanetId {
 }
 
 function planetSymbol(planetId: PlanetId) {
+  if (planetId === 'decimal') return '0.1'
+  if (planetId === 'fraction') return '1/2'
   if (planetId === 'multiply') {
     return '×'
   }
@@ -525,6 +535,26 @@ export function PlanetMenuPage() {
             </>
           ) : null}
 
+          {isNumericPlanetId(planet.id) ? <>
+            <section className="planet-area-list" aria-label={`${planet.shortName}のエリア練習`}>
+              <h2>エリア練習</h2>
+              <div className="stage-chip-grid addition-area-grid">
+                {numericAreasForPlanet(planet.id).map((area) => <Link className="stage-chip addition-area-chip" key={area.id} to={`/learn?planet=${planet.id}&area=${area.id}`}><strong>{area.name}</strong><span>{area.description}</span></Link>)}
+              </div>
+            </section>
+            <section className="planet-area-list addition-boss-list" aria-label={`${planet.shortName}のボス`}>
+              <h2>{planet.shortName}のボス</h2>
+              <div className="stage-chip-grid addition-area-grid">
+                {bosses.filter((boss) => boss.group === planet.id).map((boss) => {
+                  const unlocked = isBossUnlocked(boss, saveData)
+                  return <Link className={`stage-chip addition-area-chip ${unlocked ? '' : 'locked'}`} key={boss.id} to={`/boss/${boss.id}`}>
+                    <NumericBossSprite boss={boss} locked={!unlocked} compact className="planet-boss-chip-sprite"/>
+                    <strong>{unlocked ? boss.label : '？？？'}</strong><span>{'★'.repeat(getClearedStars(saveData, boss.id)) || `あと${remainingQuestionsToUnlockBoss(boss, saveData)}問`}</span>
+                  </Link>
+                })}
+              </div>
+            </section>
+          </> : null}
           <WeakFactsPanel className="planet-weak-panel" planet={planet.id} />
         </>
       ) : (

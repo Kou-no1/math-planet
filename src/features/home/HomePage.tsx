@@ -8,6 +8,8 @@ import { useSaveData } from '../../hooks/useSaveData'
 import { HomePlayerStrip } from './HomePanels'
 
 function planetSymbol(planetId: string) {
+  if (planetId === 'decimal') return '0.1'
+  if (planetId === 'fraction') return '1/2'
   if (planetId === 'multiply') {
     return '×'
   }

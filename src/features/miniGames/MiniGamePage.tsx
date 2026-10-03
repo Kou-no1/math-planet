@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
+import { MathQuestion } from '../../components/game/MathValue'
 import { KukucchiCharacter } from '../../components/character/KukucchiCharacter'
 import { KeyIcon } from '../../components/collection/KeyIcon'
 import { MonsterSprite } from '../../components/collection/MonsterSprite'
@@ -56,6 +57,12 @@ import type {
 } from '../../types/game'
 import { createId } from '../../utils/id'
 import { sessionRecordScope } from '../../game-engine/scoring/sessionRecords'
+import { isNumericPlanetId } from '../../data/numericAreas'
+import { numericRocketDifficulties, type NumericRocketDifficultyId } from '../../data/numericRocket'
+import type { PlanetId } from '../../data/planets'
+import { generateAdaptiveNumericQuestion } from '../../game-engine/questions/numeric'
+import { factsWithResults } from '../../game-engine/mastery/mastery'
+import { resultIncorrectStreak } from '../../game-engine/school/schoolMode2'
 
 type MiniGameVariant = Extract<GameMode, 'battle' | 'treasure' | 'rocket'>
 type MiniGamePhase = 'ready' | 'running' | 'chests'
@@ -118,15 +125,25 @@ export function createMiniQuestion({
   additionRocketDifficulty = 'hard',
   subtractionRocketDifficulty = 'hard',
   divisionRocketDifficulty = 'hard',
+  numericRocketDifficulty = 'hard',
+  facts = {}, schoolMode2Enabled = false, recentIncorrectCount = 0,
   rng = Math.random,
 }: {
-  planet?: 'multiply' | 'add' | 'subtract' | 'divide'
+  planet?: PlanetId
+  numericRocketDifficulty?: NumericRocketDifficultyId
+  facts?: Parameters<typeof generateAdaptiveNumericQuestion>[0]
+  schoolMode2Enabled?: boolean
+  recentIncorrectCount?: number
   stages?: number[]
   additionRocketDifficulty?: AdditionRocketDifficultyId
   subtractionRocketDifficulty?: SubtractionRocketDifficultyId
   divisionRocketDifficulty?: DivisionRocketDifficultyId
   rng?: () => number
 } = {}): Question {
+  if (isNumericPlanetId(planet)) {
+    const areas = numericRocketDifficulties(planet).find((entry) => entry.id === numericRocketDifficulty)!.areaIds
+    return generateAdaptiveNumericQuestion(facts, areas[Math.floor(rng() * areas.length)] ?? areas[0], { rng, schoolMode2Enabled, recentIncorrectCount })
+  }
   if (planet === 'add') {
     const difficulty = getAdditionRocketDifficulty(additionRocketDifficulty)
     const areaId = difficulty.areaIds[Math.floor(rng() * difficulty.areaIds.length)] ?? difficulty.areaIds[0]
@@ -172,9 +189,10 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
   const isAdditionPlanet = searchParams.get('planet') === 'add'
   const isSubtractionPlanet = searchParams.get('planet') === 'subtract'
   const isDivisionPlanet = searchParams.get('planet') === 'divide'
-  const operationPlanet = isAdditionPlanet || isSubtractionPlanet || isDivisionPlanet
-  const questionPlanet = isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : isDivisionPlanet ? 'divide' : 'multiply'
-  const backTo = isAdditionPlanet
+  const numericPlanet = isNumericPlanetId(searchParams.get('planet')) ? searchParams.get('planet') as 'decimal' | 'fraction' : null
+  const operationPlanet = isAdditionPlanet || isSubtractionPlanet || isDivisionPlanet || Boolean(numericPlanet)
+  const questionPlanet = numericPlanet ?? (isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : isDivisionPlanet ? 'divide' : 'multiply')
+  const backTo = numericPlanet ? `/planet/${numericPlanet}` : isAdditionPlanet
     ? '/planet/add'
     : isSubtractionPlanet
       ? '/planet/subtract'
@@ -184,6 +202,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
   const config = gameConfig[variant]
   const equippedUfo = getUfoById(saveData.progress.equippedUfoId)
   const [phase, setPhase] = useState<MiniGamePhase>('ready')
+  const [numericRocketDifficulty, setNumericRocketDifficulty] = useState<NumericRocketDifficultyId>('easy')
   const [additionRocketDifficulty, setAdditionRocketDifficulty] =
     useState<AdditionRocketDifficultyId>('easy')
   const [subtractionRocketDifficulty, setSubtractionRocketDifficulty] =
@@ -198,11 +217,13 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       ...(isAdditionPlanet ? { additionRocketDifficulty } : {}),
       ...(isSubtractionPlanet ? { subtractionRocketDifficulty } : {}),
       ...(isDivisionPlanet ? { divisionRocketDifficulty } : {}),
+      ...(numericPlanet ? { numericRocketDifficulty } : {}),
     },
   }).recordKey
   const [question, setQuestion] = useState<Question>(() =>
     createMiniQuestion({
       planet: questionPlanet,
+      numericRocketDifficulty,
       additionRocketDifficulty,
       subtractionRocketDifficulty,
       divisionRocketDifficulty,
@@ -253,6 +274,8 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
     setQuestion(
       createMiniQuestion({
         planet: questionPlanet,
+        numericRocketDifficulty,
+        facts: saveData.progress.facts, schoolMode2Enabled: saveData.settings.schoolMode2Enabled,
         stages: questionStages,
         additionRocketDifficulty,
         subtractionRocketDifficulty,
@@ -280,10 +303,12 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
     setPhase('running')
   }
 
-  const nextQuestion = useCallback(() => {
+  const nextQuestion = useCallback((completedResults = results) => {
     setQuestion(
       createMiniQuestion({
         planet: questionPlanet,
+        numericRocketDifficulty,
+        facts: factsWithResults(saveData.progress.facts, completedResults), schoolMode2Enabled: saveData.settings.schoolMode2Enabled, recentIncorrectCount: resultIncorrectStreak(completedResults),
         stages: questionStages,
         additionRocketDifficulty,
         subtractionRocketDifficulty,
@@ -294,6 +319,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
     setTimeLeftMs(battleTimeLimitMs)
     startedAtRef.current = Date.now()
   }, [
+    numericRocketDifficulty, saveData.progress.facts, saveData.settings.schoolMode2Enabled, results,
     additionRocketDifficulty,
     divisionRocketDifficulty,
     questionPlanet,
@@ -342,7 +368,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       })
       const details: NonNullable<GameSessionSummary['details']> = {}
       if (operationPlanet) {
-        details.planet = isAdditionPlanet ? 'add' : isSubtractionPlanet ? 'subtract' : 'divide'
+        details.planet = questionPlanet
       }
       if (isAdditionPlanet && variant === 'rocket') {
         details.additionRocketDifficulty = additionRocketDifficulty
@@ -353,6 +379,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       if (isDivisionPlanet && variant === 'rocket') {
         details.divisionRocketDifficulty = divisionRocketDifficulty
       }
+      if (numericPlanet && variant === 'rocket') details.numericRocketDifficulty = numericRocketDifficulty
       if (variant === 'battle') {
         details.heartsLeft = options.battleHearts ?? hearts
         details.specialUses = options.specialUses ?? specialUses
@@ -498,6 +525,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       distance,
       divisionRocketDifficulty,
       earnedKeyIds,
+      numericPlanet, numericRocketDifficulty, questionPlanet,
       enemyHp,
       hearts,
       isAdditionPlanet,
@@ -557,7 +585,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
               specialUses,
             })
           } else {
-            nextQuestion()
+            nextQuestion(nextResults)
           }
         }, 650)
         return
@@ -576,7 +604,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
           if (nextResults.length >= treasureGoal) {
             setPhase('chests')
           } else {
-            nextQuestion()
+            nextQuestion(nextResults)
           }
         }, 650)
         return
@@ -591,7 +619,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         if (nextFuel <= 0 || nextResults.length >= rocketGoal) {
           finish(nextResults, nextScoreState, { rocketDistance: nextDistance })
         } else {
-          nextQuestion()
+          nextQuestion(nextResults)
         }
       }, 650)
     },
@@ -599,6 +627,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       distance,
       enemyHp,
       feedback,
+      setPhase,
       finish,
       fuel,
       hearts,
@@ -727,14 +756,14 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
             <div className="duration-select-panel addition-rocket-difficulty-panel" aria-label="むずかしさをえらぶ">
               <strong>むずかしさ</strong>
               <div className="segmented learn-start-segmented">
-                {(isAdditionPlanet
+                {(numericPlanet ? numericRocketDifficulties(numericPlanet) : isAdditionPlanet
                   ? additionRocketDifficulties
                   : isSubtractionPlanet
                     ? subtractionRocketDifficulties
                     : divisionRocketDifficulties).map((difficulty) => (
                   <button
                     className={
-                      (isAdditionPlanet
+                      (numericPlanet ? numericRocketDifficulty === difficulty.id : isAdditionPlanet
                         ? additionRocketDifficulty === difficulty.id
                         : isSubtractionPlanet
                           ? subtractionRocketDifficulty === difficulty.id
@@ -745,7 +774,9 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
                     key={difficulty.id}
                     type="button"
                     onClick={() => {
-                      if (isAdditionPlanet) {
+                      if (numericPlanet) {
+                        setNumericRocketDifficulty(difficulty.id as NumericRocketDifficultyId)
+                      } else if (isAdditionPlanet) {
                         setAdditionRocketDifficulty(difficulty.id as AdditionRocketDifficultyId)
                       } else if (isSubtractionPlanet) {
                         setSubtractionRocketDifficulty(
@@ -756,7 +787,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
                       }
                     }}
                     aria-pressed={
-                      isAdditionPlanet
+                      numericPlanet ? numericRocketDifficulty === difficulty.id : isAdditionPlanet
                         ? additionRocketDifficulty === difficulty.id
                         : isSubtractionPlanet
                           ? subtractionRocketDifficulty === difficulty.id
@@ -874,7 +905,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
           </div>
         ) : null}
         <h2 id="mini-question" className="question-prompt">
-          {question.prompt}
+              <MathQuestion question={question}/>
         </h2>
         <GameFeedback state={feedback} correctAnswer={question.answer} />
         {variant === 'battle' ? (

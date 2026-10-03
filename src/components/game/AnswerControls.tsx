@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { NumericKeypad } from './NumericKeypad'
-import { answerValueKey, formatAnswerValue } from '../../game-engine/questions/answer'
+import { answerValueKey } from '../../game-engine/questions/answer'
+import { MathValue } from './MathValue'
 import type { AnswerMode, AnswerValue, Question } from '../../types/game'
 
 export function AnswerControls({
@@ -63,7 +64,7 @@ export function AnswerControls({
           onClick={() => onAnswer(choice)}
           disabled={disabled}
         >
-          {formatAnswerValue(choice)}
+          <MathValue value={choice}/>
         </button>
       ))}
     </div>

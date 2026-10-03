@@ -9,4 +9,4 @@ export type OperationRewardOrigin =
 
 export type RewardOrigin = 'all' | OperationRewardOrigin
 
-export type VisibleStarFilter = 'all' | 'add' | 'subtract' | 'multiply' | 'divide'
+export type VisibleStarFilter = 'all' | 'add' | 'subtract' | 'multiply' | 'divide' | 'decimal' | 'fraction'

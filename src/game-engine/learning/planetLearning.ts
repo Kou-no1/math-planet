@@ -3,12 +3,15 @@ import type { ArithmeticOperation } from '../../types/game'
 import type { SaveData } from '../../types/save'
 import { factOperationOf } from '../questions/factIds'
 import { getWeakFacts } from '../review/weakFacts'
+import { isNumericPlanetId, numericAreasForPlanet } from '../../data/numericAreas'
 
 export const planetOperations: Record<PlanetId, ArithmeticOperation> = {
   add: 'addition',
   subtract: 'subtraction',
   multiply: 'multiplication',
   divide: 'division',
+  decimal: 'decimal',
+  fraction: 'fraction',
 }
 
 export function planetForOperation(operation: ArithmeticOperation): PlanetId {
@@ -18,6 +21,7 @@ export function planetForOperation(operation: ArithmeticOperation): PlanetId {
 }
 
 export function learningAreasForPlanet(planet: PlanetId) {
+  if (isNumericPlanetId(planet)) return numericAreasForPlanet(planet)
   return planet === 'add'
     ? additionAreas
     : planet === 'subtract'

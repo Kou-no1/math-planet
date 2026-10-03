@@ -5,6 +5,7 @@ import {
   subtractionMonsterDefinitions,
 } from '../../data/subtractionMonsters'
 import { divisionAreaCorrectKey, divisionMonsterDefinitions } from '../../data/divisionMonsters'
+import { numericAreaCorrectKey, numericMonsterDefinitions } from '../../data/numericRewards'
 import { bossDifficulties, bosses, bossLimitedItems } from '../../data/bosses'
 import { buddyDefinitions } from '../../data/buddies'
 import { keyTypes } from '../../data/keys'
@@ -136,6 +137,10 @@ export function fullOpenDebugSaveData(
     categoryCorrect[key] = Math.max(categoryCorrect[key] ?? 0, monster.threshold)
   }
   const bossProgress = { ...save.progress.bossProgress }
+  for (const monster of numericMonsterDefinitions) {
+    const key = numericAreaCorrectKey(monster.areaId)
+    categoryCorrect[key] = Math.max(categoryCorrect[key] ?? 0, monster.threshold)
+  }
   for (const boss of bosses) {
     bossProgress[boss.id] = {
       bossId: boss.id,

@@ -49,6 +49,7 @@ export function replayPath(mode: GameSessionSummary['mode']): string {
 
 function replayPathForSummary(summary: GameSessionSummary): string {
   const basePath = replayPath(summary.mode)
+  if (summary.details?.planet === 'decimal' || summary.details?.planet === 'fraction') return `${basePath}?planet=${summary.details.planet}${typeof summary.details.areaId === 'string' ? `&area=${summary.details.areaId}` : ''}`
   if (summary.details?.planet === 'add') {
     return `${basePath}?planet=add`
   }
@@ -225,7 +226,7 @@ export function ResultPage() {
   const { budgetMinutes, shouldShowNotice } = useDailyUsage()
   const summary = (location.state as { summary?: GameSessionSummary } | null)?.summary
   const planetMenuPath =
-    summary?.details?.planet === 'add'
+    summary?.details?.planet === 'decimal' || summary?.details?.planet === 'fraction' ? `/planet/${summary.details.planet}` : summary?.details?.planet === 'add'
       ? '/planet/add'
       : summary?.details?.planet === 'subtract'
         ? '/planet/subtract'

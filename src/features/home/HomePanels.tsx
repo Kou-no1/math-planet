@@ -10,6 +10,8 @@ import { TitleEmblem } from '../../components/collection/TitleEmblem'
 import { KukucchiCharacter } from '../../components/character/KukucchiCharacter'
 import { getAdditionMonsterById } from '../../data/additionMonsters'
 import { getDivisionMonsterById } from '../../data/divisionMonsters'
+import { getNumericMonsterById } from '../../data/numericRewards'
+import { NumericMonsterSprite } from '../../components/collection/NumericMonsterSprite'
 import { getLevelIconById } from '../../data/levelIcons'
 import { getPlayerIcon } from '../../data/playerIcons'
 import { getSubtractionMonsterById } from '../../data/subtractionMonsters'
@@ -33,6 +35,8 @@ import type { PlanetId } from '../../data/planets'
 import { planetOperations } from '../../game-engine/learning/planetLearning'
 
 function renderSelectedBuddy(selectionId: string | null) {
+  const numericMonster = selectionId?.startsWith('numeric-monster:') ? getNumericMonsterById(selectionId.slice('numeric-monster:'.length)) : undefined
+  if (numericMonster) return <NumericMonsterSprite monster={numericMonster} className="home-buddy-sprite"/>
   const additionMonster = selectionId?.startsWith('addition-monster:')
     ? getAdditionMonsterById(selectionId.replace(/^addition-monster:/, ''))
     : undefined

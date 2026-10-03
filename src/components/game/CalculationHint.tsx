@@ -1,10 +1,12 @@
 import type { Question } from '../../types/game'
 import { calculationHint } from '../../game-engine/learning/calculationHints'
 import { useRef } from 'react'
+import { parseFactId } from '../../game-engine/questions/factIds'
 
 export function CalculationHint({ question, onOpen }: { question: Question; onOpen?: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null)
   const hint = calculationHint(question)
+  const fact = parseFactId(question.id)
   if (!hint) return null
   return (
     <>
@@ -45,6 +47,14 @@ export function CalculationHint({ question, onOpen }: { question: Question; onOp
           </button>
         </div>
         <div className="calculation-hint-content">
+          {fact?.operation === 'fraction' && fact.numericOperands ? <div className="fraction-models">
+            {[fact.numericOperands.slice(0, 2), fact.numericOperands.slice(2)].map(([numerator, denominator], index) => <div key={index} className="fraction-model" role="img" aria-label={`${numerator}/${denominator}の大きさ`}>
+              <strong>{numerator}/{denominator}</strong>
+              <div className="fraction-model-bar" style={{ gridTemplateColumns: `repeat(${denominator}, 1fr)` }} aria-hidden="true">
+                {Array.from({ length: denominator }, (_, cell) => <i className={cell < numerator ? 'filled' : ''} key={cell}/>)}
+              </div>
+            </div>)}
+          </div> : null}
           {hint.groups.length > 0 ? (
             <div className="hint-group-grid">
               {hint.groups.map((group, index) => (

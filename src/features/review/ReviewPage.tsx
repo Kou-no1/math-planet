@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
+import { MathQuestion } from '../../components/game/MathValue'
 import { MonsterSprite } from '../../components/collection/MonsterSprite'
 import { AnswerControls } from '../../components/game/AnswerControls'
 import { GameFeedback } from '../../components/game/GameFeedback'
@@ -33,7 +34,7 @@ export function ReviewPage() {
   const [searchParams] = useSearchParams()
   const requestedPlanet = searchParams.get('planet')
   const planet: PlanetId =
-    requestedPlanet === 'add' || requestedPlanet === 'subtract' || requestedPlanet === 'divide'
+    requestedPlanet === 'add' || requestedPlanet === 'subtract' || requestedPlanet === 'divide' || requestedPlanet === 'decimal' || requestedPlanet === 'fraction'
       ? requestedPlanet
       : 'multiply'
   const operation = planetOperations[planet]
@@ -185,7 +186,7 @@ export function ReviewPage() {
                     />
                   ) : (
                     <span className="review-operation-symbol" aria-hidden="true">
-                      {planet === 'add' ? '+' : planet === 'subtract' ? '-' : '÷'}
+                      {planet === 'decimal' ? '0.1' : planet === 'fraction' ? '1/2' : planet === 'add' ? '+' : planet === 'subtract' ? '-' : '÷'}
                     </span>
                   )}
                   <span>
@@ -226,7 +227,7 @@ export function ReviewPage() {
             />
           </div>
           <h2 id="review-question" className="question-prompt">
-            {question.prompt}
+              <MathQuestion question={question}/>
           </h2>
           <GameFeedback state={feedback} correctAnswer={question.answer} />
           <AnswerControls

@@ -6,6 +6,7 @@ import {
   subtractionMonsterDefinitions,
 } from '../../data/subtractionMonsters'
 import { divisionMonsterDefinitions, isDivisionMonsterOwned } from '../../data/divisionMonsters'
+import { numericMonsterDefinitions, isNumericMonsterOwned } from '../../data/numericRewards'
 import { keyTypes } from '../../data/keys'
 import { buddyDefinitions } from '../../data/buddies'
 import { rocketBadges } from '../../data/rocketBadges'
@@ -91,12 +92,12 @@ export function calculateBookProgress(save: SaveData): BookProgressSummary {
         advancedMonsterOwned +
         additionMonsterOwned +
         subtractionMonsterOwned +
-        divisionMonsterOwned,
+        divisionMonsterOwned + numericMonsterDefinitions.filter((monster) => isNumericMonsterOwned(monster, save.progress.categoryCorrect)).length,
       monsterTotal +
         advancedMonsterDefinitions.length +
         additionMonsterDefinitions.length +
         subtractionMonsterDefinitions.length +
-        divisionMonsterDefinitions.length,
+        divisionMonsterDefinitions.length + numericMonsterDefinitions.length,
     ),
     buddies: countPercent(
       new Set(save.progress.monsterBook).size + ownedBuddyCount,

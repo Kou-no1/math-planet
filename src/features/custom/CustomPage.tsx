@@ -31,8 +31,12 @@ import {
   parseMonsterBuddySelectionId,
 } from '../../game-engine/collection/buddies'
 import { useSaveData } from '../../hooks/useSaveData'
+import { getNumericMonsterById } from '../../data/numericRewards'
+import { NumericMonsterSprite } from '../../components/collection/NumericMonsterSprite'
 
 function renderBuddy(selectionId: string | null, className = 'custom-preview-buddy') {
+  const numericMonster = selectionId?.startsWith('numeric-monster:') ? getNumericMonsterById(selectionId.slice('numeric-monster:'.length)) : undefined
+  if (numericMonster) return <NumericMonsterSprite monster={numericMonster} className={className}/>
   const additionMonster = selectionId?.startsWith('addition-monster:')
     ? getAdditionMonsterById(selectionId.replace(/^addition-monster:/, ''))
     : undefined
@@ -61,6 +65,7 @@ function renderBuddy(selectionId: string | null, className = 'custom-preview-bud
 
 function EntryIcon({ entry }: { entry: CustomInventoryEntry }) {
   const locked = !entry.owned
+  if (entry.numericMonster) return <NumericMonsterSprite monster={entry.numericMonster} locked={locked} className="custom-item-sprite"/>
   if (entry.kind === 'ufo') {
     return <UfoBadge ufo={entry.ufo} locked={locked} compact />
   }
@@ -179,6 +184,7 @@ export function CustomPage() {
         entry.kind === 'addition-monster-buddy' ||
         entry.kind === 'subtraction-monster-buddy' ||
         entry.kind === 'division-monster-buddy' ||
+        entry.kind === 'numeric-monster-buddy' ||
         entry.kind === 'dedicated-buddy'
       ) {
         return {

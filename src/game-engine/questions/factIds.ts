@@ -3,6 +3,11 @@ import type {
   ArithmeticOperation,
   MultiplicationFactProgress,
 } from '../../types/game'
+import {
+  getNumericAreaById, isNumericAreaId, numericCalculationSymbols,
+  type NumericOperands, type NumericPlanetId,
+} from '../../data/numericAreas'
+import { formatNumericOperand } from './rational'
 
 export type ParsedFactId = {
   id: string
@@ -10,6 +15,7 @@ export type ParsedFactId = {
   left: number
   right: number
   areaId?: string
+  numericOperands?: NumericOperands
 }
 
 export function makeMultiplicationFactId(left: number, right: number): string {
@@ -28,7 +34,27 @@ export function makeDivisionFactId(areaId: string, left: number, right: number):
   return `divide:${areaId}:${left}/${right}`
 }
 
+export function makeNumericFactId(planet: NumericPlanetId, areaId: string, operands: NumericOperands): string {
+  return `${planet}:${areaId}:${JSON.stringify(operands)}`
+}
+
 export function parseFactId(id: string): ParsedFactId | null {
+  const numericMatch = id.match(/^(decimal|fraction):([a-z0-9-]+):(\[.*\])$/)
+  if (numericMatch) {
+    if (!isNumericAreaId(numericMatch[2])) return null
+    const area = getNumericAreaById(numericMatch[2])
+    if (area.generator.operation !== numericMatch[1]) return null
+    try {
+      const tuple: unknown = JSON.parse(numericMatch[3])
+      if (!Array.isArray(tuple) || tuple.length !== 4 ||
+        !tuple.every((value) => Number.isSafeInteger(value) && value > 0 && value <= 10000)) return null
+      const operands = tuple as NumericOperands
+      return {
+        id, operation: area.generator.operation, areaId: area.id,
+        left: operands[0], right: operands[2], numericOperands: operands,
+      }
+    } catch { return null }
+  }
   const additionMatch = id.match(/^add:([a-z0-9-]+):(\d+)\+(\d+)$/)
   if (additionMatch) {
     return {
@@ -120,6 +146,12 @@ export function isDivisionFactProgress(fact: MultiplicationFactProgress): boolea
 }
 
 export function formatFactLabel(fact: MultiplicationFactProgress | ParsedFactId): string {
+  const parsed = parseFactId(fact.id)
+  if (parsed?.numericOperands && isNumericAreaId(parsed.areaId)) {
+    const area = getNumericAreaById(parsed.areaId)
+    const [left, leftDenominator, right, rightDenominator] = parsed.numericOperands
+    return `${formatNumericOperand(area.generator.operation, left, leftDenominator)} ${numericCalculationSymbols[area.generator.calculation]} ${formatNumericOperand(area.generator.operation, right, rightDenominator)}`
+  }
   const operation = 'operation' in fact ? fact.operation : parseFactId(fact.id)?.operation
   if (operation === 'addition') {
     return `${fact.left} + ${fact.right}`

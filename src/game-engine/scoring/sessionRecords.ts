@@ -20,7 +20,7 @@ export function sessionRecordScope(
         : explicit === 'add' ||
             explicit === 'subtract' ||
             explicit === 'divide' ||
-            explicit === 'multiply'
+            explicit === 'multiply' || explicit === 'decimal' || explicit === 'fraction'
           ? explicit
           : summary.results.length > 0
             ? 'multiply'
@@ -47,6 +47,7 @@ export function sessionRecordScope(
     details.additionRocketDifficulty,
     details.subtractionRocketDifficulty,
     details.divisionRocketDifficulty,
+    details.numericRocketDifficulty,
     details.bossDifficulty,
   ].find((value) => typeof value === 'string') as string | undefined
   const answerMode = details.answerMode === 'input' ? ('input' as const) : ('choice' as const)

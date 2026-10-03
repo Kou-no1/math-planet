@@ -96,6 +96,23 @@ describe('app flow', () => {
     expect(replayPath('boss')).toBe('/battle')
   })
 
+  it.each(['小数', '分数'])('opens %s practice, speed, rocket and review in the selected planet', async (name) => {
+    const user = await completeOnboarding()
+    await user.click(screen.getByRole('link', { name: new RegExp(`${name}のほし`) }))
+    expect(await screen.findByRole('heading', { name: `${name}のほし` })).toBeInTheDocument()
+    const learn = screen.getByRole('link', { name: /おぼえる/ })
+    expect(learn).toHaveAttribute('href', expect.stringContaining(name === '小数' ? 'decimal' : 'fraction'))
+    expect(screen.getByRole('link', { name: /あそぶ/ })).toHaveAttribute('href', expect.stringContaining('/rocket'))
+    expect(screen.getByRole('link', { name: /スピード/ })).toHaveAttribute('href', expect.stringContaining('/speed'))
+    await user.click(learn)
+    expect(await screen.findByRole('button', { name: '入力' })).toBeDisabled()
+    await user.click(screen.getByRole('button', { name: 'スタート！' }))
+    await waitFor(() => expect(document.querySelectorAll('.choice-grid button')).toHaveLength(4), { timeout: 5000 })
+    const heading = document.querySelector('#question-title')!
+    expect(heading).toHaveTextContent(name === '小数' ? /\d+\.\d+.*\+/ : /\+/)
+    if (name === '分数') expect(heading.querySelectorAll('.fraction-value')).toHaveLength(2)
+  })
+
   it('keeps school time budget behind a teacher code', async () => {
     const user = await completeOnboarding()
     await user.click(screen.getAllByRole('link', { name: 'せってい' })[0])

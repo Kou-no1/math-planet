@@ -27,6 +27,7 @@ import {
   type ShopItemVisualLayer,
 } from '../../data/shopItems'
 import { ufoDefinitions, type UfoDefinition } from '../../data/ufos'
+import { numericMonsterDefinitions, isNumericMonsterOwned, type NumericMonsterDefinition } from '../../data/numericRewards'
 import type { SaveData } from '../../types/save'
 import type {
   OperationRewardOrigin,
@@ -43,6 +44,7 @@ export type CustomEntryKind =
   | 'addition-monster-buddy'
   | 'subtraction-monster-buddy'
   | 'division-monster-buddy'
+  | 'numeric-monster-buddy'
   | 'dedicated-buddy'
   | 'title'
 
@@ -73,6 +75,7 @@ export type CustomInventoryEntry = {
   additionMonster?: AdditionMonsterDefinition
   subtractionMonster?: SubtractionMonsterDefinition
   divisionMonster?: DivisionMonsterDefinition
+  numericMonster?: NumericMonsterDefinition
 }
 
 export type CustomInventoryTab = {
@@ -101,6 +104,8 @@ export const customStarFilterLabels: Record<CustomStarFilter, string> = {
   subtract: 'ひきざん',
   multiply: 'かけざん',
   divide: 'わりざん',
+  decimal: '小数',
+  fraction: '分数',
 }
 
 export const customStarFilterOrder: CustomStarFilter[] = [
@@ -109,6 +114,8 @@ export const customStarFilterOrder: CustomStarFilter[] = [
   'subtract',
   'multiply',
   'divide',
+  'decimal',
+  'fraction',
 ]
 
 export const customRewardOrigins: CustomRewardOrigin[] = [
@@ -354,6 +361,13 @@ export function buildCustomInventory(
     ...additionMonsterBuddyEntries(save),
     ...subtractionMonsterBuddyEntries(save),
     ...divisionMonsterBuddyEntries(save),
+    ...numericMonsterDefinitions.map((monster): CustomInventoryEntry => {
+      const id = `numeric-monster:${monster.id}`
+      const owned = isNumericMonsterOwned(monster, save.progress.categoryCorrect)
+      return { id, tabId: 'buddy', kind: 'numeric-monster-buddy', origin: monster.origin,
+        label: owned ? monster.name : '？？？', description: monster.description, owned,
+        selected: owned && save.progress.equippedBuddyId === id, method: `${monster.threshold}問正解`, acquiredAt: null, numericMonster: monster }
+    }),
     ...dedicatedBuddyEntries(save),
     ...titleEntries(save),
   ].filter((entry) => matchesCustomStarFilter(entry.origin, starFilter))

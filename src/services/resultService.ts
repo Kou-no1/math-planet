@@ -17,6 +17,7 @@ import type { SaveData } from '../types/save'
 
 function extractCategoryKey(result: AnswerResult): string | null {
   const fact = factFromResult(result)
+  if ((fact?.operation === 'decimal' || fact?.operation === 'fraction') && fact.areaId) return `${fact.operation}:${fact.areaId}`
   if (fact?.operation === 'addition' && fact.areaId) {
     return `addition:${fact.areaId}`
   }

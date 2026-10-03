@@ -389,7 +389,7 @@ describe('learning integrity', () => {
       expect(missions.some((mission) => mission.label.includes('のだん'))).toBe(false)
     }
     const refreshed = refreshMissionsIfNeeded(save, new Date(day2))
-    expect(refreshed.progress.missions).toHaveLength(12)
+    expect(refreshed.progress.missions).toHaveLength(18)
     expect(refreshMissionsIfNeeded(refreshed, new Date(day2))).toBe(refreshed)
   })
 
