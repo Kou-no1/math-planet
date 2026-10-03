@@ -28,6 +28,9 @@ import {
 import { formatFactLabel } from '../../game-engine/questions/factIds'
 import { getWeakFacts, weakFactHintText } from '../../game-engine/review/weakFacts'
 import { useSaveData } from '../../hooks/useSaveData'
+import { titleLabel } from '../../game-engine/rewards/titles'
+import type { PlanetId } from '../../data/planets'
+import { planetOperations } from '../../game-engine/learning/planetLearning'
 
 function renderSelectedBuddy(selectionId: string | null) {
   const additionMonster = selectionId?.startsWith('addition-monster:')
@@ -50,13 +53,7 @@ function renderSelectedBuddy(selectionId: string | null) {
   }
   const monster = parseMonsterBuddySelectionId(selectionId)
   if (monster) {
-    return (
-      <MonsterSprite
-        left={monster.left}
-        right={monster.right}
-        className="home-buddy-sprite"
-      />
-    )
+    return <MonsterSprite left={monster.left} right={monster.right} className="home-buddy-sprite" />
   }
   const buddyId = parseDedicatedBuddySelectionId(selectionId)
   return buddyId ? <BuddySprite buddyId={buddyId} className="home-buddy-sprite" /> : null
@@ -92,7 +89,13 @@ export function HomePlayerStrip() {
   )
 }
 
-export function PlayerCommandPanel({ className = '' }: { className?: string }) {
+export function PlayerCommandPanel({
+  className = '',
+  planet,
+}: {
+  className?: string
+  planet?: PlanetId
+}) {
   const { saveData } = useSaveData()
   const player = saveData.player
   const equippedUfo = getUfoById(saveData.progress.equippedUfoId)
@@ -104,7 +107,7 @@ export function PlayerCommandPanel({ className = '' }: { className?: string }) {
   const buddyContent = renderSelectedBuddy(equippedBuddyId)
   const playerIcon = getPlayerIcon(player?.icon)
   const levelIcon = getLevelIconById(player?.icon)
-  const crewTitle = player?.currentTitle ?? 'はじめのいっぽ'
+  const crewTitle = titleLabel(player?.currentTitle)
   const shipName = player?.shipName ?? defaultShipName
   const characterName = player?.characterName ?? defaultCharacterName
 
@@ -123,22 +126,28 @@ export function PlayerCommandPanel({ className = '' }: { className?: string }) {
             <h2>{player?.nickname ?? 'くくとも'}</h2>
           </div>
           <div className="home-current-title">
-            <TitleEmblem title={player?.currentTitle ?? 'はじめのいっぽ'} className="home-title-emblem" />
-            <p className="title-line">{player?.currentTitle ?? 'はじめのいっぽ'}</p>
+            <TitleEmblem
+              title={player?.currentTitle ?? 'はじめのいっぽ'}
+              className="home-title-emblem"
+            />
+            <p className="title-line">{titleLabel(player?.currentTitle)}</p>
           </div>
         </div>
 
         <section className="home-mission-compact" aria-labelledby="mission-title">
           <h2 id="mission-title">きょうのめあて</h2>
           <div className="mission-list">
-            {saveData.progress.missions.slice(0, 3).map((mission) => (
-              <div className="mission-item" key={mission.id}>
-                <span>{mission.label}</span>
-                <strong>
-                  {mission.progress}/{mission.target}
-                </strong>
-              </div>
-            ))}
+            {saveData.progress.missions
+              .filter((mission) => !planet || mission.operation === planetOperations[planet])
+              .slice(0, 3)
+              .map((mission) => (
+                <div className="mission-item" key={mission.id}>
+                  <span>{mission.label}</span>
+                  <strong>
+                    {mission.progress}/{mission.target}
+                  </strong>
+                </div>
+              ))}
           </div>
         </section>
 
@@ -180,12 +189,25 @@ export function PlayerCommandPanel({ className = '' }: { className?: string }) {
   )
 }
 
-export function WeakFactsPanel({ className = '' }: { className?: string }) {
+export function WeakFactsPanel({
+  className = '',
+  planet,
+}: {
+  className?: string
+  planet?: PlanetId
+}) {
   const { saveData } = useSaveData()
-  const weakFacts = getWeakFacts(saveData.progress.facts, 3)
+  const weakFacts = getWeakFacts(
+    saveData.progress.facts,
+    3,
+    planet ? { operation: planetOperations[planet] } : {},
+  )
 
   return (
-    <section className={['weak-section', className].filter(Boolean).join(' ')} aria-labelledby="weak-title">
+    <section
+      className={['weak-section', className].filter(Boolean).join(' ')}
+      aria-labelledby="weak-title"
+    >
       <h2 id="weak-title">にがて</h2>
       <p className="weak-hint">{weakFactHintText}</p>
       {weakFacts.length === 0 ? (

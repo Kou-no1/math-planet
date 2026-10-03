@@ -1,8 +1,5 @@
-import type {
-  DailyMission,
-  LearningLevel,
-  MultiplicationFactProgress,
-} from './game'
+import type { AnswerMode, DailyMission, LearningLevel, MultiplicationFactProgress } from './game'
+import type { PlanetId } from '../data/planets'
 import type { DailyBudgetMinutes } from '../game-engine/school/dailyUsage'
 
 export type PlayerData = {
@@ -26,6 +23,8 @@ export type SettingsData = {
   reduceMotion: boolean
   dailyBudgetMinutes: DailyBudgetMinutes
   schoolMode2Enabled: boolean
+  practiceQuestionCount: 5 | 9 | 15
+  practiceAnswerMode: AnswerMode
 }
 
 export type BestRecord = {
@@ -43,6 +42,13 @@ export type GameHistoryEntry = {
   averageResponseTimeMs: number
   score: number
   playedAt: string
+  planet?: PlanetId | 'mixed' | 'legacy'
+  recordKey?: string
+  areaIds?: string[]
+  difficultyId?: string | null
+  answerMode?: AnswerMode
+  durationSeconds?: number | null
+  hintCount?: number
 }
 
 export type BossDifficultyId = 'normal' | 'hard' | 'fast' | 'gekimuzu'

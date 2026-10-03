@@ -24,7 +24,7 @@ export function AnswerControls({
     }
 
     function handleKeyDown(event: KeyboardEvent) {
-      if (disabled) {
+      if (disabled || document.querySelector('dialog[open]')) {
         return
       }
       if (/^\d$/.test(event.key)) {
@@ -34,7 +34,7 @@ export function AnswerControls({
         onInputChange(inputValue.slice(0, -1))
       }
       if (event.key === 'Enter') {
-        onAnswer(inputValue)
+        if (inputValue.length > 0) onAnswer(inputValue)
       }
     }
 
@@ -46,6 +46,7 @@ export function AnswerControls({
     return (
       <NumericKeypad
         value={inputValue}
+        disabled={disabled}
         onChange={onInputChange}
         onSubmit={() => onAnswer(inputValue)}
       />
@@ -53,7 +54,7 @@ export function AnswerControls({
   }
 
   return (
-    <div className="choice-grid" aria-label="答えを選ぶ">
+    <div className="choice-grid" aria-label="こたえをえらぶ">
       {(question.choices ?? []).map((choice) => (
         <button
           className="choice-button"

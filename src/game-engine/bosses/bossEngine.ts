@@ -1,5 +1,6 @@
 import {
   bossDifficulties,
+  allGekimuzuTitle,
   bosses,
   additionLegendTitle,
   additionMasterTitle,
@@ -23,7 +24,7 @@ import {
   isSubtractionFactProgress,
 } from '../questions/factIds'
 import { grantFinalTitleIfEarned } from '../rewards/finalTitle'
-import { titleRecordId } from '../rewards/titles'
+import { grantPlayerTitles, hasTitle, titleRecordId } from '../rewards/titles'
 import type {
   BossDifficultyId,
   BossDifficultyProgress,
@@ -120,24 +121,29 @@ export function isBossUnlocked(boss: BossDefinition, save: SaveData): boolean {
     return areBasicStageBossesCleared(save)
   }
   if (boss.group === 'advanced') {
-    return boss.advancedCategory ? countCorrectByCategory(save, boss.advancedCategory) >= bossUnlockRequiredCorrect : false
+    return boss.advancedCategory
+      ? countCorrectByCategory(save, boss.advancedCategory) >= bossUnlockRequiredCorrect
+      : false
   }
   if (boss.group === 'addition') {
-    return boss.additionAreaId ? countCorrectForAdditionArea(save, boss.additionAreaId) >= bossUnlockRequiredCorrect : false
+    return boss.additionAreaId
+      ? countCorrectForAdditionArea(save, boss.additionAreaId) >= bossUnlockRequiredCorrect
+      : false
   }
   if (boss.group === 'subtraction') {
-    return boss.subtractionAreaId ? countCorrectForSubtractionArea(save, boss.subtractionAreaId) >= bossUnlockRequiredCorrect : false
+    return boss.subtractionAreaId
+      ? countCorrectForSubtractionArea(save, boss.subtractionAreaId) >= bossUnlockRequiredCorrect
+      : false
   }
   if (boss.group === 'division') {
-    return boss.divisionAreaId ? countCorrectForDivisionArea(save, boss.divisionAreaId) >= bossUnlockRequiredCorrect : false
+    return boss.divisionAreaId
+      ? countCorrectForDivisionArea(save, boss.divisionAreaId) >= bossUnlockRequiredCorrect
+      : false
   }
   return boss.stages ? countCorrectForStages(save, boss.stages) >= bossUnlockRequiredCorrect : false
 }
 
-export function countCorrectForBossUnlock(
-  boss: BossDefinition,
-  save: SaveData,
-): number | null {
+export function countCorrectForBossUnlock(boss: BossDefinition, save: SaveData): number | null {
   if (boss.id === 'boss-all-kuku') {
     return null
   }
@@ -148,7 +154,9 @@ export function countCorrectForBossUnlock(
     return boss.additionAreaId ? countCorrectForAdditionArea(save, boss.additionAreaId) : null
   }
   if (boss.group === 'subtraction') {
-    return boss.subtractionAreaId ? countCorrectForSubtractionArea(save, boss.subtractionAreaId) : null
+    return boss.subtractionAreaId
+      ? countCorrectForSubtractionArea(save, boss.subtractionAreaId)
+      : null
   }
   if (boss.group === 'division') {
     return boss.divisionAreaId ? countCorrectForDivisionArea(save, boss.divisionAreaId) : null
@@ -189,51 +197,78 @@ export function getClearedStars(save: SaveData, bossId: string): number {
   const boss = getBossById(bossId)
   return difficultyOrder.reduce((stars, difficulty) => {
     return getDifficultyProgress(save, bossId, difficulty).cleared
-      ? Math.max(stars, boss ? getBossDifficulty(boss, difficulty).stars : bossDifficulties[difficulty].stars)
+      ? Math.max(
+          stars,
+          boss ? getBossDifficulty(boss, difficulty).stars : bossDifficulties[difficulty].stars,
+        )
       : stars
   }, 0)
 }
 
 function hasAllFastClears(save: SaveData): boolean {
   return bosses
-    .filter((boss) => boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division')
+    .filter(
+      (boss) =>
+        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+    )
     .every((boss) => getDifficultyProgress(save, boss.id, 'fast').cleared)
 }
 
 function hasAllGekimuzuClears(save: SaveData): boolean {
   return bosses
-    .filter((boss) => boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division')
+    .filter(
+      (boss) =>
+        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+    )
     .every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
 }
 
 function hasAllAdditionNormalClears(save: SaveData): boolean {
   const additionBosses = bosses.filter((boss) => boss.group === 'addition')
-  return additionBosses.length > 0 && additionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  return (
+    additionBosses.length > 0 &&
+    additionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  )
 }
 
 function hasAllAdditionGekimuzuClears(save: SaveData): boolean {
   const additionBosses = bosses.filter((boss) => boss.group === 'addition')
-  return additionBosses.length > 0 && additionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  return (
+    additionBosses.length > 0 &&
+    additionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  )
 }
 
 function hasAllSubtractionNormalClears(save: SaveData): boolean {
   const subtractionBosses = bosses.filter((boss) => boss.group === 'subtraction')
-  return subtractionBosses.length > 0 && subtractionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  return (
+    subtractionBosses.length > 0 &&
+    subtractionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  )
 }
 
 function hasAllSubtractionGekimuzuClears(save: SaveData): boolean {
   const subtractionBosses = bosses.filter((boss) => boss.group === 'subtraction')
-  return subtractionBosses.length > 0 && subtractionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  return (
+    subtractionBosses.length > 0 &&
+    subtractionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  )
 }
 
 function hasAllDivisionNormalClears(save: SaveData): boolean {
   const divisionBosses = bosses.filter((boss) => boss.group === 'division')
-  return divisionBosses.length > 0 && divisionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  return (
+    divisionBosses.length > 0 &&
+    divisionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'normal').cleared)
+  )
 }
 
 function hasAllDivisionGekimuzuClears(save: SaveData): boolean {
   const divisionBosses = bosses.filter((boss) => boss.group === 'division')
-  return divisionBosses.length > 0 && divisionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  return (
+    divisionBosses.length > 0 &&
+    divisionBosses.every((boss) => getDifficultyProgress(save, boss.id, 'gekimuzu').cleared)
+  )
 }
 
 function addTreasureKeyRewards(
@@ -246,7 +281,10 @@ function addTreasureKeyRewards(
   }
   const nextTreasureKeys = { ...treasureKeys }
   for (const keyId of keyIds) {
-    const current = nextTreasureKeys[keyId] ?? { count: 0, firstAcquiredAt: null }
+    const current = nextTreasureKeys[keyId] ?? {
+      count: 0,
+      firstAcquiredAt: null,
+    }
     nextTreasureKeys[keyId] = {
       count: current.count + 1,
       firstAcquiredAt: current.firstAcquiredAt ?? acquiredAt,
@@ -329,9 +367,7 @@ export function applyBossClearReward(
   const withDifficulty: SaveData = {
     ...save,
     player: {
-      ...save.player,
-      titles: Array.from(new Set([...save.player.titles, ...rewardTitles])),
-      currentTitle: rewardTitles.at(-1) ?? save.player.currentTitle,
+      ...grantPlayerTitles(save.player, rewardTitles),
       coins: save.player.coins + (firstClear || options.rewardBudgetPaused ? 0 : 12),
     },
     progress: {
@@ -394,15 +430,11 @@ export function applyBossClearReward(
   }
 
   const shouldGrantLegendary =
-    hasAllFastClears(withDifficulty) && !player.titles.includes(legendaryBossTitle)
+    hasAllFastClears(withDifficulty) && !hasTitle(player, legendaryBossTitle)
   const withLegendary: SaveData = shouldGrantLegendary
     ? {
         ...withDifficulty,
-        player: {
-          ...player,
-          titles: Array.from(new Set([...player.titles, legendaryBossTitle])),
-          currentTitle: legendaryBossTitle,
-        },
+        player: grantPlayerTitles(player, [legendaryBossTitle]),
         progress: {
           ...withDifficulty.progress,
           collectionRecords: addCollectionRecords(withDifficulty.progress.collectionRecords, [
@@ -420,13 +452,13 @@ export function applyBossClearReward(
   const additionTitlesToGrant = [
     boss.group === 'addition' &&
     hasAllAdditionNormalClears(withLegendary) &&
-    !withLegendary.player?.titles.includes(additionMasterTitle)
+    !hasTitle(withLegendary.player, additionMasterTitle)
       ? additionMasterTitle
       : null,
     boss.group === 'addition' &&
     difficulty === 'gekimuzu' &&
     hasAllAdditionGekimuzuClears(withLegendary) &&
-    !withLegendary.player?.titles.includes(additionLegendTitle)
+    !hasTitle(withLegendary.player, additionLegendTitle)
       ? additionLegendTitle
       : null,
   ].filter((title): title is string => Boolean(title))
@@ -434,11 +466,7 @@ export function applyBossClearReward(
     additionTitlesToGrant.length > 0 && withLegendary.player
       ? {
           ...withLegendary,
-          player: {
-            ...withLegendary.player,
-            titles: Array.from(new Set([...withLegendary.player.titles, ...additionTitlesToGrant])),
-            currentTitle: additionTitlesToGrant.at(-1) ?? withLegendary.player.currentTitle,
-          },
+          player: grantPlayerTitles(withLegendary.player, additionTitlesToGrant),
           progress: {
             ...withLegendary.progress,
             collectionRecords: addCollectionRecords(
@@ -447,7 +475,10 @@ export function applyBossClearReward(
                 kind: 'title',
                 id: titleRecordId(title),
                 acquiredAt: clearedAt,
-                method: title === additionMasterTitle ? 'たしざんぜんえりあぼす' : 'たしざんぜんえりあげきむず',
+                method:
+                  title === additionMasterTitle
+                    ? 'たしざんぜんえりあぼす'
+                    : 'たしざんぜんえりあげきむず',
               })),
             ),
           },
@@ -457,13 +488,13 @@ export function applyBossClearReward(
   const subtractionTitlesToGrant = [
     boss.group === 'subtraction' &&
     hasAllSubtractionNormalClears(withAdditionTitles) &&
-    !withAdditionTitles.player?.titles.includes(subtractionMasterTitle)
+    !hasTitle(withAdditionTitles.player, subtractionMasterTitle)
       ? subtractionMasterTitle
       : null,
     boss.group === 'subtraction' &&
     difficulty === 'gekimuzu' &&
     hasAllSubtractionGekimuzuClears(withAdditionTitles) &&
-    !withAdditionTitles.player?.titles.includes(subtractionLegendTitle)
+    !hasTitle(withAdditionTitles.player, subtractionLegendTitle)
       ? subtractionLegendTitle
       : null,
   ].filter((title): title is string => Boolean(title))
@@ -471,11 +502,7 @@ export function applyBossClearReward(
     subtractionTitlesToGrant.length > 0 && withAdditionTitles.player
       ? {
           ...withAdditionTitles,
-          player: {
-            ...withAdditionTitles.player,
-            titles: Array.from(new Set([...withAdditionTitles.player.titles, ...subtractionTitlesToGrant])),
-            currentTitle: subtractionTitlesToGrant.at(-1) ?? withAdditionTitles.player.currentTitle,
-          },
+          player: grantPlayerTitles(withAdditionTitles.player, subtractionTitlesToGrant),
           progress: {
             ...withAdditionTitles.progress,
             collectionRecords: addCollectionRecords(
@@ -484,7 +511,10 @@ export function applyBossClearReward(
                 kind: 'title',
                 id: titleRecordId(title),
                 acquiredAt: clearedAt,
-                method: title === subtractionMasterTitle ? 'ひきざんぜんえりあぼす' : 'ひきざんぜんえりあげきむず',
+                method:
+                  title === subtractionMasterTitle
+                    ? 'ひきざんぜんえりあぼす'
+                    : 'ひきざんぜんえりあげきむず',
               })),
             ),
           },
@@ -494,13 +524,13 @@ export function applyBossClearReward(
   const divisionTitlesToGrant = [
     boss.group === 'division' &&
     hasAllDivisionNormalClears(withSubtractionTitles) &&
-    !withSubtractionTitles.player?.titles.includes(divisionMasterTitle)
+    !hasTitle(withSubtractionTitles.player, divisionMasterTitle)
       ? divisionMasterTitle
       : null,
     boss.group === 'division' &&
     difficulty === 'gekimuzu' &&
     hasAllDivisionGekimuzuClears(withSubtractionTitles) &&
-    !withSubtractionTitles.player?.titles.includes(divisionLegendTitle)
+    !hasTitle(withSubtractionTitles.player, divisionLegendTitle)
       ? divisionLegendTitle
       : null,
   ].filter((title): title is string => Boolean(title))
@@ -508,11 +538,7 @@ export function applyBossClearReward(
     divisionTitlesToGrant.length > 0 && withSubtractionTitles.player
       ? {
           ...withSubtractionTitles,
-          player: {
-            ...withSubtractionTitles.player,
-            titles: Array.from(new Set([...withSubtractionTitles.player.titles, ...divisionTitlesToGrant])),
-            currentTitle: divisionTitlesToGrant.at(-1) ?? withSubtractionTitles.player.currentTitle,
-          },
+          player: grantPlayerTitles(withSubtractionTitles.player, divisionTitlesToGrant),
           progress: {
             ...withSubtractionTitles.progress,
             collectionRecords: addCollectionRecords(
@@ -521,7 +547,10 @@ export function applyBossClearReward(
                 kind: 'title',
                 id: titleRecordId(title),
                 acquiredAt: clearedAt,
-                method: title === divisionMasterTitle ? 'わりざん全エリアボス' : 'わりざん全エリアげきムズ',
+                method:
+                  title === divisionMasterTitle
+                    ? 'わりざん全エリアボス'
+                    : 'わりざん全エリアげきムズ',
               })),
             ),
           },
@@ -533,11 +562,10 @@ export function applyBossClearReward(
   const shouldGrantGrandReward =
     difficulty === 'gekimuzu' &&
     hasAllGekimuzuClears(withDivisionTitles) &&
-    (!currentOwnedUfos.includes(specialUfoId) ||
-      !currentOwnedItems.includes(galaxySwirlEffectId))
+    (!currentOwnedUfos.includes(specialUfoId) || !currentOwnedItems.includes(galaxySwirlEffectId))
   if (!shouldGrantGrandReward) {
     const finalTitleResult = grantFinalTitleIfEarned(withDivisionTitles, clearedAt)
-    const finalTitle = finalTitleResult.granted ? finalTitleResult.save.player?.currentTitle : null
+    const finalTitle = finalTitleResult.granted ? allGekimuzuTitle : null
     return {
       save: finalTitleResult.save,
       firstClear,
@@ -566,7 +594,15 @@ export function applyBossClearReward(
       rewardItemIds,
       rewardUfoIds,
       rewardEffectIds,
-      rewardTitles: Array.from(new Set([...rewardTitles, ...legendaryTitles, ...additionTitlesToGrant, ...subtractionTitlesToGrant, ...divisionTitlesToGrant])),
+      rewardTitles: Array.from(
+        new Set([
+          ...rewardTitles,
+          ...legendaryTitles,
+          ...additionTitlesToGrant,
+          ...subtractionTitlesToGrant,
+          ...divisionTitlesToGrant,
+        ]),
+      ),
       grandReward: false,
     }
   }
@@ -576,7 +612,9 @@ export function applyBossClearReward(
     progress: {
       ...withDivisionTitles.progress,
       ownedUfos: Array.from(new Set([...withDivisionTitles.progress.ownedUfos, specialUfoId])),
-      ownedItems: Array.from(new Set([...withDivisionTitles.progress.ownedItems, galaxySwirlEffectId])),
+      ownedItems: Array.from(
+        new Set([...withDivisionTitles.progress.ownedItems, galaxySwirlEffectId]),
+      ),
       equippedUfoId: withDivisionTitles.progress.equippedUfoId ?? specialUfoId,
       collectionRecords: addCollectionRecords(withDivisionTitles.progress.collectionRecords, [
         {
@@ -595,7 +633,7 @@ export function applyBossClearReward(
     },
   }
   const finalTitleResult = grantFinalTitleIfEarned(withGrandReward, clearedAt)
-  const finalTitle = finalTitleResult.granted ? finalTitleResult.save.player?.currentTitle : null
+  const finalTitle = finalTitleResult.granted ? allGekimuzuTitle : null
   return {
     save: finalTitleResult.save,
     firstClear,

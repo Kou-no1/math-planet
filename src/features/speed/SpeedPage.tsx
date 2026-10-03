@@ -43,7 +43,8 @@ export type SpeedQuestionSource =
 
 export function createSpeedQuestion(source: SpeedQuestionSource): Question {
   if (source.planet === 'add') {
-    const areas = source.selectedAreas.length > 0 ? source.selectedAreas : additionAreas.map((area) => area.id)
+    const areas =
+      source.selectedAreas.length > 0 ? source.selectedAreas : additionAreas.map((area) => area.id)
     const areaId = areas[Math.floor(Math.random() * areas.length)] ?? additionAreas[0].id
     return generateAdditionQuestion(areaId)
   }
@@ -57,9 +58,7 @@ export function createSpeedQuestion(source: SpeedQuestionSource): Question {
   }
   if (source.planet === 'divide') {
     const areas =
-      source.selectedAreas.length > 0
-        ? source.selectedAreas
-        : divisionAreas.map((area) => area.id)
+      source.selectedAreas.length > 0 ? source.selectedAreas : divisionAreas.map((area) => area.id)
     const areaId = areas[Math.floor(Math.random() * areas.length)] ?? divisionAreas[0].id
     return generateDivisionQuestion(areaId)
   }
@@ -89,7 +88,7 @@ export function SpeedPage() {
       ? '/planet/subtract'
       : isDivisionPlanet
         ? '/planet/divide'
-      : '/planet/multiply'
+        : '/planet/multiply'
   const savedSpeedSettings = saveData.progress.speedSettings
   const initialStages =
     savedSpeedSettings.selectedStages.length > 0
@@ -97,7 +96,9 @@ export function SpeedPage() {
       : [...defaultSpeedStages]
   const [phase, setPhase] = useState<SpeedPhase>('ready')
   const [selectedStages, setSelectedStages] = useState<number[]>(initialStages)
-  const [selectedAreas, setSelectedAreas] = useState<AdditionAreaId[]>(additionAreas.map((area) => area.id))
+  const [selectedAreas, setSelectedAreas] = useState<AdditionAreaId[]>(
+    additionAreas.map((area) => area.id),
+  )
   const [selectedSubtractionAreas, setSelectedSubtractionAreas] = useState<SubtractionAreaId[]>(
     subtractionAreas.map((area) => area.id),
   )
@@ -111,10 +112,16 @@ export function SpeedPage() {
       isAdditionPlanet
         ? { planet: 'add', selectedAreas: additionAreas.map((area) => area.id) }
         : isSubtractionPlanet
-          ? { planet: 'subtract', selectedAreas: subtractionAreas.map((area) => area.id) }
+          ? {
+              planet: 'subtract',
+              selectedAreas: subtractionAreas.map((area) => area.id),
+            }
           : isDivisionPlanet
-            ? { planet: 'divide', selectedAreas: divisionAreas.map((area) => area.id) }
-        : { planet: 'multiply', selectedStages: initialStages },
+            ? {
+                planet: 'divide',
+                selectedAreas: divisionAreas.map((area) => area.id),
+              }
+            : { planet: 'multiply', selectedStages: initialStages },
     ),
   )
   const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle')
@@ -141,9 +148,17 @@ export function SpeedPage() {
             ? { planet: 'subtract', selectedAreas: selectedSubtractionAreas }
             : isDivisionPlanet
               ? { planet: 'divide', selectedAreas: selectedDivisionAreas }
-          : { planet: 'multiply', selectedStages: sortedStages },
+              : { planet: 'multiply', selectedStages: sortedStages },
       ),
-    [isAdditionPlanet, isSubtractionPlanet, isDivisionPlanet, selectedAreas, selectedSubtractionAreas, selectedDivisionAreas, sortedStages],
+    [
+      isAdditionPlanet,
+      isSubtractionPlanet,
+      isDivisionPlanet,
+      selectedAreas,
+      selectedSubtractionAreas,
+      selectedDivisionAreas,
+      sortedStages,
+    ],
   )
 
   const saveSpeedSettings = useCallback(
@@ -174,6 +189,12 @@ export function SpeedPage() {
       score: scoreState.score,
       results,
       finishedAt: new Date().toISOString(),
+      details: {
+        planet: operationPlanet ?? 'multiply',
+        selectedStages: sortedStages.map(String),
+        durationSeconds,
+        answerMode: 'choice',
+      },
     })
     const summary = operationPlanet
       ? {
@@ -194,7 +215,24 @@ export function SpeedPage() {
     })
     setSaveData(applied.save)
     navigate('/result', { state: { summary: applied.summary } })
-  }, [isAdditionPlanet, isSubtractionPlanet, navigate, operationPlanet, phase, results, rewardBudgetReached, saveData, scoreState.maxCombo, scoreState.score, selectedAreas, selectedSubtractionAreas, selectedDivisionAreas, setSaveData])
+  }, [
+    isAdditionPlanet,
+    isSubtractionPlanet,
+    navigate,
+    operationPlanet,
+    phase,
+    results,
+    rewardBudgetReached,
+    saveData,
+    scoreState.maxCombo,
+    scoreState.score,
+    selectedAreas,
+    selectedSubtractionAreas,
+    selectedDivisionAreas,
+    setSaveData,
+    sortedStages,
+    durationSeconds,
+  ])
 
   useEffect(() => {
     if (phase !== 'running') {
@@ -340,12 +378,20 @@ export function SpeedPage() {
   }
 
   return (
-    <AppShell title="すぴーど" backTo={backTo} className={phase === 'running' ? 'game-shell' : 'mode-ready-shell speed-ready-shell'}>
+    <AppShell
+      title="すぴーど"
+      backTo={backTo}
+      className={phase === 'running' ? 'game-shell' : 'mode-ready-shell speed-ready-shell'}
+    >
       {phase === 'ready' ? (
         <ModeStartScreen
           title={`${durationSeconds}びょうちゃれんじ`}
           eyebrow="わーぷじゅんびOK"
-          description={operationPlanet ? 'えりあをえらんで、じぶんのきろくにちょうせん！' : 'だんをえらんで、じぶんのきろくにちょうせん！'}
+          description={
+            operationPlanet
+              ? 'えりあをえらんで、じぶんのきろくにちょうせん！'
+              : 'だんをえらんで、じぶんのきろくにちょうせん！'
+          }
           level={saveData.player?.level ?? 1}
           backTo={backTo}
           startLabel={operationPlanet ? 'すたーと！' : undefined}
@@ -370,7 +416,12 @@ export function SpeedPage() {
                 </button>
               </div>
               <div className="stage-chip-grid">
-                {(isAdditionPlanet ? additionAreas : isSubtractionPlanet ? subtractionAreas : divisionAreas).map((area) => {
+                {(isAdditionPlanet
+                  ? additionAreas
+                  : isSubtractionPlanet
+                    ? subtractionAreas
+                    : divisionAreas
+                ).map((area) => {
                   const selected = isAdditionPlanet
                     ? selectedAreas.includes(area.id as AdditionAreaId)
                     : isSubtractionPlanet
@@ -401,7 +452,11 @@ export function SpeedPage() {
             <div className="stage-select-panel" aria-label="だんをえらぶ">
               <div className="start-option-header">
                 <strong>だんをえらぶ</strong>
-                <button className="secondary-action compact-action" type="button" onClick={toggleAllStages}>
+                <button
+                  className="secondary-action compact-action"
+                  type="button"
+                  onClick={toggleAllStages}
+                >
                   ぜんぶ
                 </button>
               </div>
@@ -470,7 +525,7 @@ export function SpeedPage() {
                     ? `${selectedAreas.length}エリアからしゅつだいちゅう`
                     : isSubtractionPlanet
                       ? `${selectedSubtractionAreas.length}えりあからしゅつだいちゅう`
-                    : `${sortedStages.join('・')}のだんからしゅつだいちゅう`}
+                      : `${sortedStages.join('・')}のだんからしゅつだいちゅう`}
                 </p>
               </div>
             </aside>

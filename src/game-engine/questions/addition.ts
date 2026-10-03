@@ -1,7 +1,4 @@
-import {
-  getAdditionAreaById,
-  type AdditionAreaId,
-} from '../../data/planets'
+import { getAdditionAreaById, type AdditionAreaId } from '../../data/planets'
 import type { Question } from '../../types/game'
 import { makeAdditionFactId } from './factIds'
 
@@ -45,7 +42,7 @@ function hasNoCarry(left: number, right: number): boolean {
   return ones(left) + ones(right) <= 9 && tens(left) + tens(right) <= 9
 }
 
-function matchesArea(areaId: AdditionAreaId, left: number, right: number): boolean {
+export function matchesAdditionArea(areaId: AdditionAreaId, left: number, right: number): boolean {
   if (areaId === 'add-within-9') {
     return left >= 1 && left <= 8 && right >= 1 && right <= 8 && left + right <= 9
   }
@@ -64,7 +61,7 @@ function matchesArea(areaId: AdditionAreaId, left: number, right: number): boole
   return left >= 100 && left <= 999 && right >= 100 && right <= 999
 }
 
-function difficultyForAddition(areaId: AdditionAreaId, left: number, right: number): number {
+export function difficultyForAddition(areaId: AdditionAreaId, left: number, right: number): number {
   const digitSum = ones(left) + ones(right)
   const tensSum = tens(left) + tens(right)
   if (areaId === 'add-within-9') {
@@ -94,11 +91,7 @@ function createPair(areaId: AdditionAreaId, left: number, right: number): Additi
   }
 }
 
-export function createAdditionFactPool({
-  areaId,
-}: {
-  areaId: AdditionAreaId
-}): AdditionFactPair[] {
+export function createAdditionFactPool({ areaId }: { areaId: AdditionAreaId }): AdditionFactPair[] {
   if (areaId === 'add-three-digit') {
     const pairs: AdditionFactPair[] = []
     for (let left = 100; left <= 999; left += 37) {
@@ -113,7 +106,7 @@ export function createAdditionFactPool({
   const pairs: AdditionFactPair[] = []
   for (let left = area.generator.minAddend; left <= area.generator.maxAddend; left += 1) {
     for (let right = area.generator.minAddend; right <= area.generator.maxAddend; right += 1) {
-      if (matchesArea(areaId, left, right)) {
+      if (matchesAdditionArea(areaId, left, right)) {
         pairs.push(createPair(areaId, left, right))
       }
     }
@@ -129,7 +122,7 @@ export function generateAdditionFactPair(
   for (let attempts = 0; attempts < 500; attempts += 1) {
     const left = randomInt(area.generator.minAddend, area.generator.maxAddend, rng)
     const right = randomInt(area.generator.minAddend, area.generator.maxAddend, rng)
-    if (matchesArea(areaId, left, right)) {
+    if (matchesAdditionArea(areaId, left, right)) {
       return createPair(areaId, left, right)
     }
   }
@@ -141,7 +134,7 @@ function carryForgottenAnswer(left: number, right: number): number {
   let place = 1
   let value = 0
   for (let index = 0; index < maxDigits; index += 1) {
-    const digit = (Math.floor(left / place) % 10 + Math.floor(right / place) % 10) % 10
+    const digit = ((Math.floor(left / place) % 10) + (Math.floor(right / place) % 10)) % 10
     value += digit * place
     place *= 10
   }
@@ -168,9 +161,11 @@ export function generateAdditionChoices(
     correctAnswer - 10,
     correctAnswer + 1,
     correctAnswer - 1,
-    correctAnswer + 100,
-    correctAnswer - 100,
-    reversedDigits(correctAnswer),
+    ...(correctAnswer >= 100 ? [correctAnswer + 100, correctAnswer - 100] : []),
+    ...(Math.max(left, right) >= 10 &&
+    reversedDigits(correctAnswer) <= 2 * 10 ** String(Math.max(left, right)).length
+      ? [reversedDigits(correctAnswer)]
+      : []),
     left + ones(right),
     right + ones(left),
   ].filter((value) => value > 0 && value !== correctAnswer)

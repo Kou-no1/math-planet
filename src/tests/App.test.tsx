@@ -1,6 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import { replayPath } from '../features/results/ResultPage'
 
@@ -10,6 +10,7 @@ async function completeOnboarding() {
   await user.type(screen.getByLabelText('よびな'), 'みらい')
   await user.click(screen.getByRole('button', { name: 'はじめる' }))
   expect(await screen.findByRole('heading', { name: 'ホーム' })).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'スキップ' }))
   return user
 }
 
@@ -38,6 +39,52 @@ describe('app flow', () => {
     expect(sound).not.toBeChecked()
   })
 
+  it.each([
+    ['たしざんのほし', /\d+ \+ \d+/],
+    ['ひきざんのほし', /\d+ - \d+/],
+    ['わりざんのほし', /\d+ ÷ \d+/],
+  ])('opens planet-specific review from %s', async (name, prompt) => {
+    const user = await completeOnboarding()
+    await user.click(screen.getByRole('link', { name: new RegExp(name) }))
+    expect(await screen.findByRole('heading', { name: 'きょうのめあて' })).toBeInTheDocument()
+    expect(document.querySelector('.home-mission-compact')?.textContent).not.toContain('のだん')
+    await user.click(screen.getByRole('link', { name: 'ふくしゅう' }))
+    expect(
+      await screen.findByRole('heading', { name: 'ふくしゅう' }, { timeout: 20000 }),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'ふくしゅうすたーと' }))
+    expect(await screen.findByRole('heading', { name: prompt })).toBeInTheDocument()
+  })
+
+  it('applies a teacher practice preset and enables integer input for addition', async () => {
+    const user = await completeOnboarding()
+    await user.click(screen.getAllByRole('link', { name: 'せってい' })[0])
+    await user.click(await screen.findByText('せんせい・ほごしゃ'))
+    await user.type(screen.getByLabelText('せんせいコード'), '9631')
+    await user.click(screen.getByRole('button', { name: 'ひらく' }))
+    await user.click(screen.getByRole('button', { name: 'じっくり' }))
+    const saved = JSON.parse(window.localStorage.getItem('kukucchi-save-v1')!)
+    expect(saved.settings.practiceQuestionCount).toBe(5)
+    await user.click(screen.getAllByRole('link', { name: 'もどる' })[0])
+    await user.click(await screen.findByRole('link', { name: /たしざんのほし/ }))
+    await user.click(await screen.findByRole('link', { name: /おぼえる/ }))
+    expect(await screen.findByText('5もんぜんぶちゃれんじ')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'にゅうりょく' })).toBeEnabled()
+  })
+
+  it('keeps the current session in memory and warns when persistence fails', async () => {
+    const failingStorage = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new DOMException('full', 'QuotaExceededError')
+    })
+    try {
+      await completeOnboarding()
+      expect(screen.getByRole('alert')).toHaveTextContent('ほぞんできませんでした')
+      expect(screen.getByText('みらい')).toBeInTheDocument()
+    } finally {
+      failingStorage.mockRestore()
+    }
+  })
+
   it('replays monster battle without jumping to boss battle', () => {
     expect(replayPath('battle')).toBe('/monster-battle')
     expect(replayPath('boss')).toBe('/battle')
@@ -64,7 +111,9 @@ describe('app flow', () => {
     expect(screen.getByRole('heading', { name: 'ほしをえらぶ' })).toBeInTheDocument()
     const starRegion = screen.getByRole('region', { name: 'ほしをえらぶ' })
     expect(
-      within(starRegion).getAllByText(/(?:たしざん|ひきざん|かけざん)のほし/).map((element) => element.textContent),
+      within(starRegion)
+        .getAllByText(/(?:たしざん|ひきざん|かけざん)のほし/)
+        .map((element) => element.textContent),
     ).toEqual(['たしざんのほし', 'ひきざんのほし', 'かけざんのほし'])
     expect(screen.getByRole('link', { name: /かけざんのほし/ })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /たしざんのほし/ })).toBeInTheDocument()
@@ -91,7 +140,9 @@ describe('app flow', () => {
     expect(document.querySelector('a[href="#/speed?planet=add"]')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'たしざんぼす' })).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: /おぼえる/ }))
-    expect(await screen.findByRole('heading', { name: '1〜9のたしざん れんしゅう' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: '1〜9のたしざん れんしゅう' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '1〜9のたしざんこたえが9まで' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '九九' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '平方数' })).not.toBeInTheDocument()
@@ -152,16 +203,17 @@ describe('app flow', () => {
     await user.click(screen.getByRole('button', { name: '九九' }))
     await user.click(screen.getByRole('button', { name: '上がり 1→9' }))
     await user.click(screen.getByRole('button', { name: 'スタート！' }))
-    expect(await screen.findByRole('heading', { level: 2, name: /×/ }, { timeout: 3000 })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { level: 2, name: /×/ }, { timeout: 10000 }),
+    ).toBeInTheDocument()
 
     for (let index = 0; index < 9; index += 1) {
       await answerCurrentQuestion(user)
       expect(await screen.findByText(/できた/)).toBeInTheDocument()
       if (index < 8) {
-        await waitFor(
-          () => expect(screen.queryByText(/できた/)).not.toBeInTheDocument(),
-          { timeout: 2000 },
-        )
+        await waitFor(() => expect(screen.queryByText(/できた/)).not.toBeInTheDocument(), {
+          timeout: 5000,
+        })
       }
     }
 

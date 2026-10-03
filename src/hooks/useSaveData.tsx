@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-  type ReactNode,
-} from 'react'
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import { refreshMissionsIfNeeded } from '../game-engine/missions/missions'
 import { createLocalStorageSaveRepository } from '../repositories/saveRepository'
 import type { SaveData } from '../types/save'
@@ -15,6 +8,7 @@ type SaveDataContextValue = {
   setSaveData: (next: SaveData) => void
   updateSaveData: (updater: (current: SaveData) => SaveData) => void
   resetSaveData: () => void
+  saveError: string | null
 }
 
 const SaveDataContext = createContext<SaveDataContextValue | null>(null)
@@ -22,14 +16,18 @@ const SaveDataContext = createContext<SaveDataContextValue | null>(null)
 const repository = createLocalStorageSaveRepository()
 
 export function SaveDataProvider({ children }: { children: ReactNode }) {
-  const [saveData, setSaveDataState] = useState(() =>
-    refreshMissionsIfNeeded(repository.load()),
-  )
+  const [saveData, setSaveDataState] = useState(() => refreshMissionsIfNeeded(repository.load()))
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const setSaveData = useCallback((next: SaveData) => {
     const refreshed = refreshMissionsIfNeeded(next)
-    repository.save(refreshed)
     setSaveDataState(refreshed)
+    try {
+      repository.save(refreshed)
+      setSaveError(null)
+    } catch {
+      setSaveError('ほぞんできませんでした。せっていで データをほぞんしてね。')
+    }
   }, [])
 
   const updateSaveData = useCallback(
@@ -41,19 +39,18 @@ export function SaveDataProvider({ children }: { children: ReactNode }) {
 
   const resetSaveData = useCallback(() => {
     repository.clear()
+    setSaveError(null)
     setSaveDataState(refreshMissionsIfNeeded(repository.load()))
   }, [])
 
   const value = useMemo(
-    () => ({ saveData, setSaveData, updateSaveData, resetSaveData }),
-    [resetSaveData, saveData, setSaveData, updateSaveData],
+    () => ({ saveData, setSaveData, updateSaveData, resetSaveData, saveError }),
+    [resetSaveData, saveData, setSaveData, updateSaveData, saveError],
   )
 
-  return (
-    <SaveDataContext.Provider value={value}>
+  return <SaveDataContext.Provider value={value}>
       {children}
     </SaveDataContext.Provider>
-  )
 }
 
 export function useSaveData(): SaveDataContextValue {

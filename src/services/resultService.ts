@@ -1,16 +1,14 @@
-import {
-  createFactProgress,
-  updateFactProgress,
-} from '../game-engine/mastery/mastery'
+import { createFactProgress, updateFactProgress } from '../game-engine/mastery/mastery'
 import { newlyOwnedAdvancedMonsters } from '../data/advancedMonsters'
 import { addCollectionRecords } from '../game-engine/collection/collectionRecords'
-import {
-  factFromResult,
-  isMultiplicationFactProgress,
-} from '../game-engine/questions/factIds'
-import { getMasteredFacts, getMonsterFacts } from '../game-engine/review/weakFacts'
+import { factFromResult, isMultiplicationFactProgress } from '../game-engine/questions/factIds'
+import { getMasteredFacts, getWeakFacts } from '../game-engine/review/weakFacts'
 import { grantFinalTitleIfEarned } from '../game-engine/rewards/finalTitle'
-import { judgeNewTitles, titleRecordId } from '../game-engine/rewards/titles'
+import { grantPlayerTitles, judgeNewTitles, titleRecordId } from '../game-engine/rewards/titles'
+import { allGekimuzuTitle } from '../data/bosses'
+import { sessionRecordScope } from '../game-engine/scoring/sessionRecords'
+import { refreshMissionsIfNeeded, updateMissionProgress } from '../game-engine/missions/missions'
+import { planetOperations } from '../game-engine/learning/planetLearning'
 import { expToLevel } from '../game-engine/rewards/rewards'
 import { applyRewardBudgetToSummary } from '../game-engine/school/dailyUsage'
 import { applySchoolRewardTaperingToSummary } from '../game-engine/school/schoolMode2'
@@ -53,6 +51,7 @@ export function applySessionResult(
   summary: GameSessionSummary,
   options: { rewardBudgetPaused?: boolean } = {},
 ): { save: SaveData; summary: GameSessionSummary } {
+  save = refreshMissionsIfNeeded(save, new Date(summary.finishedAt))
   const schoolSummary = applySchoolRewardTaperingToSummary(
     summary,
     save.progress.facts,
@@ -99,7 +98,8 @@ export function applySessionResult(
     categoryCorrect,
   )
 
-  const best = save.progress.bests[effectiveSummary.mode]
+  const recordScope = sessionRecordScope(effectiveSummary)
+  const best = save.progress.bests[recordScope.recordKey]
   const bestUpdated = !best || effectiveSummary.score > best.score
   const interimSave: SaveData = {
     ...save,
@@ -110,7 +110,6 @@ export function applySessionResult(
     },
   }
   const newTitles = judgeNewTitles(effectiveSummary, interimSave)
-  const titles = Array.from(new Set([...(save.player?.titles ?? []), ...newTitles]))
   const nextExp = (save.player?.exp ?? 0) + effectiveSummary.earnedExp
   const monsterBook = Array.from(
     new Set([
@@ -126,67 +125,38 @@ export function applySessionResult(
   const newlyMasteredMultiplicationFacts = getMasteredFacts(facts).filter(
     (fact) => isMultiplicationFactProgress(fact) && !previousMasteredMultiplicationIds.has(fact.id),
   )
-  const collectionRecords = addCollectionRecords(
-    save.progress.collectionRecords,
-    [
-      ...newlyMasteredMultiplicationFacts.map((fact) => ({
-        kind: 'monster',
-        id: fact.id,
-        acquiredAt: effectiveSummary.finishedAt,
-        method: 'にがてふくしゅう',
-      })),
-      ...newlyOwnedAdvanced.map((monster) => ({
-        kind: 'advanced-monster',
-        id: monster.id,
-        acquiredAt: effectiveSummary.finishedAt,
-        method: `${monster.category === 'square' ? '平方数' : monster.category === 'pi' ? '3.14' : 'ミックス'} ${monster.threshold}もん`,
-      })),
-      ...newTitles.map((title) => ({
-        kind: 'title',
-        id: titleRecordId(title),
-        acquiredAt: effectiveSummary.finishedAt,
-        method: 'がくしゅうリザルト',
-      })),
-    ],
+  const collectionRecords = addCollectionRecords(save.progress.collectionRecords, [
+    ...newlyMasteredMultiplicationFacts.map((fact) => ({
+      kind: 'monster',
+      id: fact.id,
+      acquiredAt: effectiveSummary.finishedAt,
+      method: 'にがてふくしゅう',
+    })),
+    ...newlyOwnedAdvanced.map((monster) => ({
+      kind: 'advanced-monster',
+      id: monster.id,
+      acquiredAt: effectiveSummary.finishedAt,
+      method: `${monster.category === 'square' ? '平方数' : monster.category === 'pi' ? '3.14' : 'ミックス'} ${monster.threshold}もん`,
+    })),
+    ...newTitles.map((title) => ({
+      kind: 'title',
+      id: titleRecordId(title),
+      acquiredAt: effectiveSummary.finishedAt,
+      method: 'がくしゅうリザルト',
+    })),
+  ])
+  const missions = save.progress.missions.map((mission) =>
+    updateMissionProgress(mission, effectiveSummary),
   )
-  const missions = save.progress.missions.map((mission) => {
-    let gained = 0
-    if (mission.kind === 'correct-count') {
-      gained = effectiveSummary.correctCount
-    }
-    if (mission.kind === 'combo') {
-      gained = effectiveSummary.maxCombo
-    }
-    if (mission.kind === 'speed-play' && effectiveSummary.mode === 'speed') {
-      gained = 1
-    }
-    if (mission.kind === 'stage-practice') {
-      const match = mission.id.match(/stage-(\d+)/)
-      const stage = match?.[1]
-      gained = stage
-        ? effectiveSummary.results.filter(
-            (result) => result.correct && result.questionId.startsWith(`${stage}x`),
-          ).length
-        : 0
-    }
-    const progress = Math.min(mission.target, mission.progress + gained)
-    return {
-      ...mission,
-      progress,
-      completed: progress >= mission.target,
-    }
-  })
 
   const nextSaveBeforeFinalTitle: SaveData = {
     ...save,
     player: save.player
       ? {
-          ...save.player,
+          ...grantPlayerTitles(save.player, newTitles),
           exp: nextExp,
           level: expToLevel(nextExp),
           coins: save.player.coins + effectiveSummary.earnedCoins,
-          titles,
-          currentTitle: titles.at(-1) ?? save.player.currentTitle,
           lastPlayedAt: effectiveSummary.finishedAt,
         }
       : save.player,
@@ -197,6 +167,8 @@ export function applySessionResult(
       history: [
         {
           id: effectiveSummary.id,
+          ...recordScope,
+          hintCount: effectiveSummary.results.filter((result) => result.hintUsed).length,
           mode: effectiveSummary.mode,
           correctCount: effectiveSummary.correctCount,
           totalQuestions: effectiveSummary.totalQuestions,
@@ -209,7 +181,7 @@ export function applySessionResult(
       bests: bestUpdated
         ? {
             ...save.progress.bests,
-            [effectiveSummary.mode]: {
+            [recordScope.recordKey]: {
               score: effectiveSummary.score,
               averageResponseTimeMs: effectiveSummary.averageResponseTimeMs,
               accuracy: effectiveSummary.accuracy,
@@ -227,8 +199,8 @@ export function applySessionResult(
     effectiveSummary.finishedAt,
   )
   const nextSave = finalTitleResult.save
-  const summaryNewTitles = finalTitleResult.granted && nextSave.player?.currentTitle
-    ? Array.from(new Set([...newTitles, nextSave.player.currentTitle]))
+  const summaryNewTitles = finalTitleResult.granted
+    ? Array.from(new Set([...newTitles, allGekimuzuTitle]))
     : newTitles
 
   return {
@@ -237,7 +209,13 @@ export function applySessionResult(
       ...effectiveSummary,
       newTitles: summaryNewTitles,
       bestUpdated,
-      weakFacts: getMonsterFacts(facts),
+      weakFacts: getWeakFacts(
+        facts,
+        6,
+        recordScope.planet !== 'mixed' && recordScope.planet !== 'legacy'
+          ? { operation: planetOperations[recordScope.planet] }
+          : {},
+      ),
       masteredFacts: newlyMasteredFacts,
     },
   }

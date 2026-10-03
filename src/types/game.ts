@@ -1,8 +1,4 @@
-export type LearningLevel =
-  | 'first'
-  | 'practicing'
-  | 'challenge'
-  | 'advanced'
+export type LearningLevel = 'first' | 'practicing' | 'challenge' | 'advanced'
 
 export type ArithmeticOperation = 'multiplication' | 'addition' | 'subtraction' | 'division'
 
@@ -68,6 +64,7 @@ export type AnswerResult = {
   givenAnswer: AnswerValue
   correct: boolean
   difficulty?: number
+  hintUsed?: boolean
   responseTimeMs: number
   answeredAt: string
 }
@@ -86,6 +83,8 @@ export type MultiplicationFactProgress = {
   lastAnsweredAt: string | null
   nextReviewAt: string | null
   masteryLevel: 0 | 1 | 2 | 3 | 4 | 5
+  firstIncorrectAt?: string | null
+  overcomeAt?: string | null
   recentResults: AnswerResult[]
 }
 
@@ -118,7 +117,10 @@ export type ScoreState = {
 export type DailyMission = {
   id: string
   label: string
-  kind: 'correct-count' | 'stage-practice' | 'combo' | 'speed-play'
+  kind: 'correct-count' | 'stage-practice' | 'area-practice' | 'combo' | 'speed-play'
+  operation?: ArithmeticOperation
+  areaId?: string
+  stage?: number
   target: number
   progress: number
   completed: boolean

@@ -6089,6 +6089,7 @@ legend {
 .mode-ready-shell .mode-start-options {
   grid-column: 1 / -1;
   grid-row: 2;
+  align-self: stretch;
   gap: 6px;
   min-height: 0;
   align-content: start;

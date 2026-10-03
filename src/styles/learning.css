@@ -1,0 +1,188 @@
+.planet-expedition {
+  margin-block: 18px;
+  padding-block: 18px;
+  border-block: 2px solid var(--planet-primary);
+}
+
+.expedition-heading,
+.expedition-actions,
+.calculation-hint-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.expedition-heading h2,
+.calculation-hint-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.expedition-milestones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+  padding: 0;
+  margin-block: 14px;
+  list-style: none;
+}
+
+.expedition-milestones li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 2px solid #8092a7;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.expedition-milestones li.completed {
+  border-color: var(--planet-accent);
+}
+
+.expedition-milestones small {
+  grid-column: 2;
+}
+
+.expedition-actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.expedition-actions a {
+  min-height: 44px;
+  text-decoration: none;
+}
+
+.learning-preference-field {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.learning-preference-field legend {
+  margin-bottom: 8px;
+}
+
+.hint-trigger {
+  justify-self: start;
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 14px;
+}
+
+.learn-game-shell .arithmetic-practice-panel {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.learn-game-shell .arithmetic-practice-panel .question-prompt {
+  flex: 0 0 auto;
+}
+
+.learn-game-shell .arithmetic-practice-panel .choice-grid {
+  flex: 1 1 auto;
+  grid-template-rows: repeat(2, minmax(48px, 1fr));
+}
+
+.game-panel .game-actions:empty {
+  display: none;
+}
+
+.calculation-hint-dialog {
+  width: min(560px, calc(100vw - 24px));
+  max-width: none;
+  max-height: calc(100svh - 32px);
+  box-sizing: border-box;
+  padding: 20px;
+  border: 2px solid #3c9f8a;
+  border-radius: 8px;
+  background: #f6fbff;
+  color: #182f42;
+  overflow: auto;
+}
+
+.calculation-hint-dialog::backdrop {
+  background: rgb(0 0 0 / 55%);
+}
+
+.calculation-hint-heading .icon-button {
+  flex: 0 0 44px;
+  color: #182f42;
+}
+
+.hint-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.hint-number-group {
+  padding: 10px;
+  border: 1px solid #6a968b;
+  border-radius: 4px;
+  background: #e1f5e7;
+}
+
+.hint-number-group.remaining {
+  border-color: #bc6d4e;
+  background: #fff0df;
+}
+
+.hint-number-group.shared {
+  border-color: #7177b7;
+  background: #eeedff;
+}
+
+.hint-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 20px;
+  margin-block: 8px;
+}
+
+.hint-dots i {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #256554;
+}
+
+.hint-number-group.remaining i {
+  background: #b95c33;
+}
+
+.hint-number-group.shared i {
+  background: #6750b7;
+}
+
+.calculation-hint-content li {
+  margin-block: 10px;
+  overflow-wrap: anywhere;
+}
+
+.review-operation-symbol {
+  font-size: 32px;
+  color: #44bc9e;
+}
+
+.save-error-notice {
+  margin: 8px 0;
+  padding: 12px;
+  border: 2px solid #ae532f;
+  border-radius: 4px;
+  background: #fff0df;
+  color: #68280d;
+}
+
+.route-loading {
+  padding: 24px;
+  text-align: center;
+}

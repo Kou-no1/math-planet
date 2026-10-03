@@ -152,7 +152,7 @@ export function MonsterBookPage() {
   const ownedBossItems = new Set(saveData.progress.bossItems)
   const ownedUfos = new Set(saveData.progress.ownedUfos)
   const ownedTreasureItems = new Set(saveData.progress.ownedTreasureItems.map((item) => item.id))
-  const ownedTitles = new Set(saveData.player?.titles ?? [])
+  const ownedTitles = new Set((saveData.player?.titles ?? []).map(titleRecordId))
   const ownedBuddyRecords = new Set(
     saveData.progress.collectionRecords
       .filter((record) => record.id.startsWith('buddy:'))
@@ -161,7 +161,7 @@ export function MonsterBookPage() {
   const titleDefinitions = getTitleDefinitions()
   const titleEntries = titleDefinitions
     .map((title, index) => {
-      const owned = ownedTitles.has(title.label)
+      const owned = ownedTitles.has(title.id)
       const record = getCollectionRecord(saveData.progress.collectionRecords, 'title', titleRecordId(title.label))
       return {
         ...title,

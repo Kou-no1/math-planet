@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import {
   getTitleEmblemDefinition,
+  titleLabel,
   type TitleEmblemRarity,
 } from '../../game-engine/rewards/titles'
 
@@ -29,11 +30,15 @@ export function TitleEmblem({ title, locked = false, className, label }: TitleEm
   const glowId = useId()
   const definition = getTitleEmblemDefinition(locked ? null : title)
   const displayMotif = locked ? '?' : definition.motif
-  const ariaLabel = label ?? (locked ? 'みしゅとくのしょうごう' : `${title ?? 'しょうごう'}のエンブレム`)
+  const ariaLabel =
+    label ??
+    (locked ? 'みしゅとくのしょうごう' : `${title ? titleLabel(title) : 'しょうごう'}のエンブレム`)
 
   return (
     <svg
-      className={['title-emblem', `title-emblem-${definition.rarity}`, className].filter(Boolean).join(' ')}
+      className={['title-emblem', `title-emblem-${definition.rarity}`, className]
+        .filter(Boolean)
+        .join(' ')}
       viewBox="0 0 64 64"
       role="img"
       aria-label={ariaLabel}
@@ -55,7 +60,10 @@ export function TitleEmblem({ title, locked = false, className, label }: TitleEm
           )}
         </linearGradient>
         <filter id={glowId} x="-45%" y="-45%" width="190%" height="190%">
-          <feGaussianBlur stdDeviation={definition.rarity === 'common' ? '1.4' : '2.4'} result="blur" />
+          <feGaussianBlur
+            stdDeviation={definition.rarity === 'common' ? '1.4' : '2.4'}
+            result="blur"
+          />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -84,8 +92,20 @@ export function TitleEmblem({ title, locked = false, className, label }: TitleEm
       ) : null}
       {definition.rarity === 'legendary' ? (
         <>
-          <path d="M14 43 C22 36 42 36 50 43" fill="none" stroke="#ffffff" strokeWidth="2" opacity="0.8" />
-          <path d="M14 20 C24 27 40 27 50 20" fill="none" stroke="#ffffff" strokeWidth="1.5" opacity="0.7" />
+          <path
+            d="M14 43 C22 36 42 36 50 43"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="2"
+            opacity="0.8"
+          />
+          <path
+            d="M14 20 C24 27 40 27 50 20"
+            fill="none"
+            stroke="#ffffff"
+            strokeWidth="1.5"
+            opacity="0.7"
+          />
         </>
       ) : null}
       <text

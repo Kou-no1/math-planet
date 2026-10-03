@@ -46,8 +46,16 @@ import { useDailyUsage } from '../../hooks/useDailyUsage'
 import { useSaveData } from '../../hooks/useSaveData'
 import { playCorrectSound } from '../../services/audioService'
 import { applySessionResult } from '../../services/resultService'
-import type { AnswerResult, AnswerValue, GameMode, GameSessionSummary, Question, ScoreState } from '../../types/game'
+import type {
+  AnswerResult,
+  AnswerValue,
+  GameMode,
+  GameSessionSummary,
+  Question,
+  ScoreState,
+} from '../../types/game'
 import { createId } from '../../utils/id'
+import { sessionRecordScope } from '../../game-engine/scoring/sessionRecords'
 
 type MiniGameVariant = Extract<GameMode, 'battle' | 'treasure' | 'rocket'>
 type MiniGamePhase = 'ready' | 'running' | 'chests'
@@ -146,7 +154,10 @@ function stageStars(stage: number): string {
   return '★'.repeat(Math.max(1, Math.round(averageStageDifficulty(stage))))
 }
 
-function monsterFactFromQuestion(question: Question): { left: number; right: number } {
+function monsterFactFromQuestion(question: Question): {
+  left: number
+  right: number
+} {
   return {
     left: Number(question.metadata?.left ?? 2),
     right: Number(question.metadata?.right ?? 1),
@@ -179,8 +190,23 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
     useState<SubtractionRocketDifficultyId>('easy')
   const [divisionRocketDifficulty, setDivisionRocketDifficulty] =
     useState<DivisionRocketDifficultyId>('easy')
+  const rocketRecordKey = sessionRecordScope({
+    mode: 'rocket',
+    results: [],
+    details: {
+      planet: questionPlanet,
+      ...(isAdditionPlanet ? { additionRocketDifficulty } : {}),
+      ...(isSubtractionPlanet ? { subtractionRocketDifficulty } : {}),
+      ...(isDivisionPlanet ? { divisionRocketDifficulty } : {}),
+    },
+  }).recordKey
   const [question, setQuestion] = useState<Question>(() =>
-    createMiniQuestion({ planet: questionPlanet, additionRocketDifficulty, subtractionRocketDifficulty, divisionRocketDifficulty }),
+    createMiniQuestion({
+      planet: questionPlanet,
+      additionRocketDifficulty,
+      subtractionRocketDifficulty,
+      divisionRocketDifficulty,
+    }),
   )
   const [selectedBattleStages, setSelectedBattleStages] = useState<number[]>([...allStages])
   const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle')
@@ -267,7 +293,13 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
     setFeedback('idle')
     setTimeLeftMs(battleTimeLimitMs)
     startedAtRef.current = Date.now()
-  }, [additionRocketDifficulty, divisionRocketDifficulty, questionPlanet, questionStages, subtractionRocketDifficulty])
+  }, [
+    additionRocketDifficulty,
+    divisionRocketDifficulty,
+    questionPlanet,
+    questionStages,
+    subtractionRocketDifficulty,
+  ])
 
   const finish = useCallback(
     (
@@ -360,12 +392,10 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         const newlyEarnedBadges = reachedBadgeIds.filter(
           (badgeId) => !saveData.progress.rocketBadges.includes(badgeId),
         )
-        const rocketBestUpdated = finalDistance > saveData.progress.rocketBestDistance
         nextSave = {
           ...nextSave,
           progress: {
             ...nextSave.progress,
-            rocketBestDistance: Math.max(saveData.progress.rocketBestDistance, finalDistance),
             rocketBadges: Array.from(
               new Set([...saveData.progress.rocketBadges, ...reachedBadgeIds]),
             ),
@@ -382,7 +412,6 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         }
         nextSummary = {
           ...nextSummary,
-          bestUpdated: nextSummary.bestUpdated || rocketBestUpdated,
           details: {
             ...nextSummary.details,
             rocketBadges: newlyEarnedBadges
@@ -392,7 +421,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
               rocketBadges.find((badge) => finalDistance < badge.distance)?.name ?? null,
             nextRocketBadgeDistance:
               rocketBadges.find((badge) => finalDistance < badge.distance)?.distance ?? null,
-            rocketBestUpdated,
+            rocketBestUpdated: nextSummary.bestUpdated,
           },
         }
       }
@@ -401,7 +430,10 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         const treasureKeyIds = options.treasureKeyIds ?? earnedKeyIds
         const nextTreasureKeys = { ...nextSave.progress.treasureKeys }
         for (const keyId of treasureKeyIds) {
-          const current = nextTreasureKeys[keyId] ?? { count: 0, firstAcquiredAt: null }
+          const current = nextTreasureKeys[keyId] ?? {
+            count: 0,
+            firstAcquiredAt: null,
+          }
           nextTreasureKeys[keyId] = {
             count: current.count + 1,
             firstAcquiredAt: current.firstAcquiredAt ?? openedAt,
@@ -461,7 +493,28 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
       setSaveData(nextSave)
       navigate('/result', { state: { summary: nextSummary } })
     },
-    [additionRocketDifficulty, distance, divisionRocketDifficulty, earnedKeyIds, enemyHp, hearts, isAdditionPlanet, isSubtractionPlanet, isDivisionPlanet, keys, navigate, operationPlanet, results, rewardBudgetReached, saveData, scoreState, setSaveData, specialUses, subtractionRocketDifficulty, variant],
+    [
+      additionRocketDifficulty,
+      distance,
+      divisionRocketDifficulty,
+      earnedKeyIds,
+      enemyHp,
+      hearts,
+      isAdditionPlanet,
+      isSubtractionPlanet,
+      isDivisionPlanet,
+      keys,
+      navigate,
+      operationPlanet,
+      results,
+      rewardBudgetReached,
+      saveData,
+      scoreState,
+      setSaveData,
+      specialUses,
+      subtractionRocketDifficulty,
+      variant,
+    ],
   )
 
   const recordAnswer = useCallback(
@@ -695,7 +748,9 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
                       if (isAdditionPlanet) {
                         setAdditionRocketDifficulty(difficulty.id as AdditionRocketDifficultyId)
                       } else if (isSubtractionPlanet) {
-                        setSubtractionRocketDifficulty(difficulty.id as SubtractionRocketDifficultyId)
+                        setSubtractionRocketDifficulty(
+                          difficulty.id as SubtractionRocketDifficultyId,
+                        )
                       } else {
                         setDivisionRocketDifficulty(difficulty.id as DivisionRocketDifficultyId)
                       }
@@ -740,7 +795,9 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
                   disabled={!unlocked}
                 >
                   <TreasureIcon locked={!unlocked} className="treasure-preview-icon" />
-                  {keyType ? <KeyIcon keyType={keyType} locked={!unlocked} className="treasure-key-icon" /> : null}
+                  {keyType ? (
+                    <KeyIcon keyType={keyType} locked={!unlocked} className="treasure-key-icon" />
+                  ) : null}
                   <strong>{unlocked ? chest.name : '？？？'}</strong>
                   <small>{chest.hint}</small>
                   <small>
@@ -793,7 +850,10 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         </div>
       </section>
 
-      <section className={`game-panel mini-game-panel mini-game-panel-${variant}`} aria-labelledby="mini-question">
+      <section
+        className={`game-panel mini-game-panel mini-game-panel-${variant}`}
+        aria-labelledby="mini-question"
+      >
         <div className="question-header">
           <span>
             {results.length}/{config.goal}
@@ -804,7 +864,10 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         </div>
         {variant === 'battle' ? (
           <div className="boss-time" aria-label={`のこり ${(timeLeftMs / 1000).toFixed(1)}びょう`}>
-            <span>{attackWarning ? 'こうげきよこく！せいかいでまもる' : 'のこり'} {(timeLeftMs / 1000).toFixed(1)}びょう</span>
+            <span>
+              {attackWarning ? 'こうげきよこく！せいかいでまもる' : 'のこり'}{' '}
+              {(timeLeftMs / 1000).toFixed(1)}びょう
+            </span>
             <div>
               <i style={{ width: `${limitPercent}%` }} />
             </div>
@@ -826,7 +889,7 @@ export function MiniGamePage({ variant }: { variant: MiniGameVariant }) {
         ) : null}
         {variant === 'rocket' ? (
           <p className="quiet-text">
-            じぶんのきろく {saveData.progress.rocketBestDistance} / つぎのばっじ{' '}
+            じぶんのきろく {saveData.progress.bests[rocketRecordKey]?.score ?? 0} / つぎのばっじ{' '}
             {rocketBadges.find((badge) => distance < badge.distance)?.name ?? 'ぜんぶたっせい'}
           </p>
         ) : null}

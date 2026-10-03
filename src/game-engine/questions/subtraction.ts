@@ -1,7 +1,4 @@
-import {
-  getSubtractionAreaById,
-  type SubtractionAreaId,
-} from '../../data/planets'
+import { getSubtractionAreaById, type SubtractionAreaId } from '../../data/planets'
 import type { Question } from '../../types/game'
 import { makeSubtractionFactId } from './factIds'
 
@@ -65,7 +62,11 @@ export function hasCascadingBorrow(left: number, right: number): boolean {
   )
 }
 
-function matchesArea(areaId: SubtractionAreaId, left: number, right: number): boolean {
+export function matchesSubtractionArea(
+  areaId: SubtractionAreaId,
+  left: number,
+  right: number,
+): boolean {
   const answer = left - right
   if (answer <= 0) {
     return false
@@ -88,7 +89,11 @@ function matchesArea(areaId: SubtractionAreaId, left: number, right: number): bo
   return left >= 100 && left <= 999 && right >= 100 && right <= 999 && left > right
 }
 
-function difficultyForSubtraction(areaId: SubtractionAreaId, left: number, right: number): number {
+export function difficultyForSubtraction(
+  areaId: SubtractionAreaId,
+  left: number,
+  right: number,
+): number {
   const answer = left - right
   if (areaId === 'sub-within-9') {
     return left <= 5 ? 1 : 2
@@ -121,7 +126,7 @@ function createThreeDigitPool(areaId: SubtractionAreaId): SubtractionFactPair[] 
   const pairs: SubtractionFactPair[] = []
   for (let left = 100; left <= 999; left += 37) {
     for (let right = 100; right <= left; right += 53) {
-      if (matchesArea(areaId, left, right)) {
+      if (matchesSubtractionArea(areaId, left, right)) {
         pairs.push(createPair(areaId, left, right))
       }
     }
@@ -157,7 +162,7 @@ export function createSubtractionFactPool({
       right <= area.generator.maxSubtrahend;
       right += 1
     ) {
-      if (matchesArea(areaId, left, right)) {
+      if (matchesSubtractionArea(areaId, left, right)) {
         pairs.push(createPair(areaId, left, right))
       }
     }
@@ -187,7 +192,7 @@ export function generateSubtractionFactPair(
   for (let attempts = 0; attempts < 500; attempts += 1) {
     const left = randomInt(area.generator.minMinuend, area.generator.maxMinuend, rng)
     const right = randomInt(area.generator.minSubtrahend, area.generator.maxSubtrahend, rng)
-    if (matchesArea(areaId, left, right)) {
+    if (matchesSubtractionArea(areaId, left, right)) {
       return createPair(areaId, left, right)
     }
   }
@@ -199,7 +204,7 @@ function borrowForgottenAnswer(left: number, right: number): number {
   let place = 1
   let value = 0
   for (let index = 0; index < maxDigits; index += 1) {
-    const digit = Math.abs(Math.floor(left / place) % 10 - Math.floor(right / place) % 10)
+    const digit = Math.abs((Math.floor(left / place) % 10) - (Math.floor(right / place) % 10))
     value += digit * place
     place *= 10
   }

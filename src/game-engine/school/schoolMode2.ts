@@ -1,11 +1,28 @@
-import type { AnswerResult, GameMode, GameSessionSummary, MultiplicationFactProgress } from '../../types/game'
+import type {
+  AnswerResult,
+  GameMode,
+  GameSessionSummary,
+  MultiplicationFactProgress,
+} from '../../types/game'
 import type { AdditionAreaId, DivisionAreaId, SubtractionAreaId } from '../../data/planets'
 import type { AdditionFactPair } from '../questions/addition'
-import { createAdditionFactPool } from '../questions/addition'
+import {
+  createAdditionFactPool,
+  difficultyForAddition,
+  matchesAdditionArea,
+} from '../questions/addition'
 import type { DivisionFactPair } from '../questions/division'
-import { createDivisionFactPool } from '../questions/division'
+import {
+  createDivisionFactPool,
+  difficultyForDivision,
+  matchesDivisionArea,
+} from '../questions/division'
 import type { SubtractionFactPair } from '../questions/subtraction'
-import { createSubtractionFactPool } from '../questions/subtraction'
+import {
+  createSubtractionFactPool,
+  difficultyForSubtraction,
+  matchesSubtractionArea,
+} from '../questions/subtraction'
 import type { MultiplicationFactPair } from '../questions/factDifficulty'
 import { createMultiplicationFactPool } from '../questions/factDifficulty'
 import {
@@ -63,9 +80,7 @@ export function classifySchoolMastery(
   return 'beginner'
 }
 
-export function rewardScaleForFact(
-  fact: MultiplicationFactProgress | undefined,
-): number {
+export function rewardScaleForFact(fact: MultiplicationFactProgress | undefined): number {
   return schoolRewardScales[classifySchoolMastery(fact)]
 }
 
@@ -202,22 +217,30 @@ export function selectAdaptiveAdditionFact({
   }
   for (const fact of Object.values(facts)) {
     const parsed = parseFactId(fact.id)
-    if (parsed?.operation === 'addition' && parsed.areaId === areaId) {
+    if (
+      parsed?.operation === 'addition' && parsed.areaId === areaId &&
+      matchesAdditionArea(areaId, parsed.left, parsed.right)
+    ) {
       poolById.set(parsed.id, {
         areaId,
         left: parsed.left,
         right: parsed.right,
-        difficulty: Math.max(1, Math.min(5, Math.round(fact.masteryLevel || 1))),
+        difficulty: difficultyForAddition(areaId, parsed.left, parsed.right),
       })
     }
   }
 
   const rawPool = [...poolById.values()]
-  const easierPool = rawPool.filter((pair) => pair.difficulty <= 2)
+  const easiestDifficulty = Math.min(...rawPool.map((pair) => pair.difficulty))
+  const easierPool = rawPool.filter((pair) => pair.difficulty <= Math.max(2, easiestDifficulty))
   const pool = recentIncorrectCount >= 2 && easierPool.length > 0 ? easierPool : rawPool
   const weighted = pool.map((pair) => ({
     pair,
-    weight: adaptiveWeight(pair, facts[makeAdditionFactId(areaId, pair.left, pair.right)], recentIncorrectCount),
+    weight: adaptiveWeight(
+      pair,
+      facts[makeAdditionFactId(areaId, pair.left, pair.right)],
+      recentIncorrectCount,
+    ),
   }))
   const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0)
   if (totalWeight <= 0) {
@@ -250,22 +273,30 @@ export function selectAdaptiveSubtractionFact({
   }
   for (const fact of Object.values(facts)) {
     const parsed = parseFactId(fact.id)
-    if (parsed?.operation === 'subtraction' && parsed.areaId === areaId) {
+    if (
+      parsed?.operation === 'subtraction' && parsed.areaId === areaId &&
+      matchesSubtractionArea(areaId, parsed.left, parsed.right)
+    ) {
       poolById.set(parsed.id, {
         areaId,
         left: parsed.left,
         right: parsed.right,
-        difficulty: Math.max(1, Math.min(5, Math.round(fact.masteryLevel || 1))),
+        difficulty: difficultyForSubtraction(areaId, parsed.left, parsed.right),
       })
     }
   }
 
   const rawPool = [...poolById.values()]
-  const easierPool = rawPool.filter((pair) => pair.difficulty <= 2)
+  const easiestDifficulty = Math.min(...rawPool.map((pair) => pair.difficulty))
+  const easierPool = rawPool.filter((pair) => pair.difficulty <= Math.max(2, easiestDifficulty))
   const pool = recentIncorrectCount >= 2 && easierPool.length > 0 ? easierPool : rawPool
   const weighted = pool.map((pair) => ({
     pair,
-    weight: adaptiveWeight(pair, facts[makeSubtractionFactId(areaId, pair.left, pair.right)], recentIncorrectCount),
+    weight: adaptiveWeight(
+      pair,
+      facts[makeSubtractionFactId(areaId, pair.left, pair.right)],
+      recentIncorrectCount,
+    ),
   }))
   const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0)
   if (totalWeight <= 0) {
@@ -298,7 +329,10 @@ export function selectAdaptiveDivisionFact({
   }
   for (const fact of Object.values(facts)) {
     const parsed = parseFactId(fact.id)
-    if (parsed?.operation === 'division' && parsed.areaId === areaId) {
+    if (
+      parsed?.operation === 'division' && parsed.areaId === areaId &&
+      matchesDivisionArea(areaId, parsed.left, parsed.right)
+    ) {
       const q = Math.floor(parsed.left / parsed.right)
       const r = parsed.left % parsed.right
       poolById.set(parsed.id, {
@@ -307,17 +341,22 @@ export function selectAdaptiveDivisionFact({
         right: parsed.right,
         quotient: q,
         remainder: r,
-        difficulty: Math.max(1, Math.min(5, Math.round(fact.masteryLevel || 1))),
+        difficulty: difficultyForDivision(areaId, parsed.left, parsed.right),
       })
     }
   }
 
   const rawPool = [...poolById.values()]
-  const easierPool = rawPool.filter((pair) => pair.difficulty <= 3)
+  const easiestDifficulty = Math.min(...rawPool.map((pair) => pair.difficulty))
+  const easierPool = rawPool.filter((pair) => pair.difficulty <= Math.max(3, easiestDifficulty))
   const pool = recentIncorrectCount >= 2 && easierPool.length > 0 ? easierPool : rawPool
   const weighted = pool.map((pair) => ({
     pair,
-    weight: adaptiveWeight(pair, facts[makeDivisionFactId(areaId, pair.left, pair.right)], recentIncorrectCount),
+    weight: adaptiveWeight(
+      pair,
+      facts[makeDivisionFactId(areaId, pair.left, pair.right)],
+      recentIncorrectCount,
+    ),
   }))
   const totalWeight = weighted.reduce((sum, item) => sum + item.weight, 0)
   if (totalWeight <= 0) {

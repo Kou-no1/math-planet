@@ -33,6 +33,12 @@ import {
 import { useSaveData } from '../../hooks/useSaveData'
 import { SAVE_DATA_VERSION, parseSaveData } from '../../storage/saveData'
 import { validateShipName } from '../../utils/bannedWords'
+import { titleLabel } from '../../game-engine/rewards/titles'
+import {
+  applyLearningPreset,
+  applyQuietPreset,
+} from '../../game-engine/settings/learningPreferences'
+import { readPreMigrationBackup } from '../../repositories/saveRepository'
 
 const teacherSettingsCode = '9631'
 
@@ -61,6 +67,7 @@ export function SettingsPage() {
   const [debugMessage, setDebugMessage] = useState('')
   const [debugLevelInput, setDebugLevelInput] = useState(String(saveData.player?.level ?? 1))
   const backupText = useMemo(() => JSON.stringify(saveData, null, 2), [saveData])
+  const preMigrationBackup = readPreMigrationBackup()
   const ownedTitles = saveData.player?.titles.length ? saveData.player.titles : ['はじめのいっぽ']
   const unlockedLevelIcons = getUnlockedLevelIcons(saveData.player?.level ?? 1)
 
@@ -131,8 +138,8 @@ export function SettingsPage() {
     }
     const currentValue =
       target === 'ship'
-        ? saveData.player?.shipName ?? defaultShipName
-        : saveData.player?.characterName ?? defaultCharacterName
+        ? (saveData.player?.shipName ?? defaultShipName)
+        : (saveData.player?.characterName ?? defaultCharacterName)
     if (nextValue === currentValue) {
       setMessage('ほぞんしました')
       return
@@ -178,12 +185,12 @@ export function SettingsPage() {
     }))
   }
 
-  function downloadBackup() {
-    const blob = new Blob([backupText], { type: 'application/json' })
+  function downloadBackup(text = backupText, suffix = '') {
+    const blob = new Blob([text], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = url
-    anchor.download = `kukucchi-save-${new Date().toISOString().slice(0, 10)}.json`
+    anchor.download = `kukucchi-save${suffix}-${new Date().toISOString().slice(0, 10)}.json`
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -348,7 +355,7 @@ export function SettingsPage() {
           >
             {ownedTitles.map((title) => (
               <option key={title} value={title}>
-                {title}
+                {titleLabel(title)}
               </option>
             ))}
           </select>
@@ -357,7 +364,23 @@ export function SettingsPage() {
 
       <section className="settings-section" aria-labelledby="sound-title">
         <h2 id="sound-title">音と動き</h2>
-        <button className="secondary-action wide" type="button" onClick={() => setTutorialOpen(true)}>
+        <button
+          className="secondary-action wide"
+          type="button"
+          onClick={() =>
+            updateSaveData((current) => ({
+              ...current,
+              settings: applyQuietPreset(current.settings),
+            }))
+          }
+        >
+          しずかにあそぶ
+        </button>
+        <button
+          className="secondary-action wide"
+          type="button"
+          onClick={() => setTutorialOpen(true)}
+        >
           あそびかた
         </button>
         <label className="switch-row">
@@ -391,9 +414,7 @@ export function SettingsPage() {
         <div className="teacher-settings-panel">
           {!teacherUnlocked ? (
             <div className="teacher-lock-panel">
-              <p className="quiet-text">
-                ここは せんせい・ほごしゃが つかいます。
-              </p>
+              <p className="quiet-text">ここは せんせい・ほごしゃが つかいます。</p>
               <label>
                 せんせいコード
                 <input
@@ -414,12 +435,86 @@ export function SettingsPage() {
               <p className="form-help" id="teacher-code-help">
                 {teacherMessage}
               </p>
-              <button className="secondary-action wide" type="button" onClick={unlockTeacherSettings}>
+              <button
+                className="secondary-action wide"
+                type="button"
+                onClick={unlockTeacherSettings}
+              >
                 ひらく
               </button>
             </div>
           ) : (
             <div className="teacher-budget-panel">
+              <h2>れんしゅうのせってい</h2>
+              <div
+                className="segmented learning-preset-controls"
+                aria-label="れんしゅうのぷりせっと"
+              >
+                {(
+                  [
+                    { id: 'relaxed', label: 'じっくり' },
+                    { id: 'standard', label: 'いつもどおり' },
+                    { id: 'challenge', label: 'ちゃれんじ' },
+                  ] as const
+                ).map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() =>
+                      updateSaveData((current) => ({
+                        ...current,
+                        settings: applyLearningPreset(current.settings, preset.id),
+                      }))
+                    }
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <fieldset className="learning-preference-field">
+                <legend>おぼえるの もんだいすう</legend>
+                <div className="segmented">
+                  {([5, 9, 15] as const).map((count) => (
+                    <button
+                      key={count}
+                      className={
+                        saveData.settings.practiceQuestionCount === count ? 'selected' : ''
+                      }
+                      aria-pressed={saveData.settings.practiceQuestionCount === count}
+                      type="button"
+                      onClick={() =>
+                        updateSaveData((current) => ({
+                          ...current,
+                          settings: {
+                            ...current.settings,
+                            practiceQuestionCount: count,
+                          },
+                        }))
+                      }
+                    >
+                      {count}もん
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+              <label>
+                はじめの こたえかた
+                <select
+                  value={saveData.settings.practiceAnswerMode}
+                  onChange={(event) =>
+                    updateSaveData((current) => ({
+                      ...current,
+                      settings: {
+                        ...current.settings,
+                        practiceAnswerMode: event.target.value === 'input' ? 'input' : 'choice',
+                      },
+                    }))
+                  }
+                >
+                  <option value="choice">4たく</option>
+                  <option value="input">にゅうりょく</option>
+                </select>
+              </label>
               <h2>1日のじかん</h2>
               <p className="quiet-text">
                 じかんをすぎても あそべます。コインとEXPだけ とまります。
@@ -456,9 +551,18 @@ export function SettingsPage() {
       <section className="settings-section" aria-labelledby="backup-title">
         <h2 id="backup-title">データ</h2>
         <p className="quiet-text">保護者・先生向け: JSONで保存とひきつぎができます。</p>
-        <button className="secondary-action wide" type="button" onClick={downloadBackup}>
+        <button className="secondary-action wide" type="button" onClick={() => downloadBackup()}>
           データをほぞんする
         </button>
+        {preMigrationBackup ? (
+          <button
+            className="secondary-action wide"
+            type="button"
+            onClick={() => downloadBackup(preMigrationBackup, '-before-migration')}
+          >
+            いこうまえのデータをほぞんする
+          </button>
+        ) : null}
         <textarea value={backupText} readOnly aria-label="コピー用セーブデータ" />
         <label className="file-button">
           ファイルからひきつぐ
@@ -481,7 +585,7 @@ export function SettingsPage() {
 
       <section className="settings-section version-section" aria-label="バージョン">
         <button className="version-tap-target" type="button" onClick={handleVersionTap}>
-          バージョン 15.9 / SaveData v{SAVE_DATA_VERSION}
+          バージョン 16 / SaveData v{SAVE_DATA_VERSION}
         </button>
         {debugPasswordOpen && !debugOpen ? (
           <form

@@ -99,17 +99,76 @@ export const bossDifficulties: Record<BossDifficultyId, BossDifficulty> = {
 }
 
 const basicBossSeeds = [
-  { id: 'boss-stage-2', no: 1, label: '1・2のだんボス', shortLabel: '1・2のだん', stages: [1, 2], emoji: '🛡️' },
-  { id: 'boss-stage-3', no: 2, label: '3のだんボス', shortLabel: '3のだん', stages: [3], emoji: '🌙' },
-  { id: 'boss-stage-4', no: 3, label: '4のだんボス', shortLabel: '4のだん', stages: [4], emoji: '💫' },
-  { id: 'boss-stage-5', no: 4, label: '5のだんボス', shortLabel: '5のだん', stages: [5], emoji: '⭐' },
-  { id: 'boss-stage-6', no: 5, label: '6のだんボス', shortLabel: '6のだん', stages: [6], emoji: '🪐' },
-  { id: 'boss-stage-7', no: 6, label: '7のだんボス', shortLabel: '7のだん', stages: [7], emoji: '☄️' },
-  { id: 'boss-stage-8', no: 7, label: '8のだんボス', shortLabel: '8のだん', stages: [8], emoji: '🌌' },
-  { id: 'boss-stage-9', no: 8, label: '9のだんボス', shortLabel: '9のだん', stages: [9], emoji: '🚀' },
+  {
+    id: 'boss-stage-2',
+    no: 1,
+    label: '1・2のだんボス',
+    shortLabel: '1・2のだん',
+    stages: [1, 2],
+    emoji: '🛡️',
+  },
+  {
+    id: 'boss-stage-3',
+    no: 2,
+    label: '3のだんボス',
+    shortLabel: '3のだん',
+    stages: [3],
+    emoji: '🌙',
+  },
+  {
+    id: 'boss-stage-4',
+    no: 3,
+    label: '4のだんボス',
+    shortLabel: '4のだん',
+    stages: [4],
+    emoji: '💫',
+  },
+  {
+    id: 'boss-stage-5',
+    no: 4,
+    label: '5のだんボス',
+    shortLabel: '5のだん',
+    stages: [5],
+    emoji: '⭐',
+  },
+  {
+    id: 'boss-stage-6',
+    no: 5,
+    label: '6のだんボス',
+    shortLabel: '6のだん',
+    stages: [6],
+    emoji: '🪐',
+  },
+  {
+    id: 'boss-stage-7',
+    no: 6,
+    label: '7のだんボス',
+    shortLabel: '7のだん',
+    stages: [7],
+    emoji: '☄️',
+  },
+  {
+    id: 'boss-stage-8',
+    no: 7,
+    label: '8のだんボス',
+    shortLabel: '8のだん',
+    stages: [8],
+    emoji: '🌌',
+  },
+  {
+    id: 'boss-stage-9',
+    no: 8,
+    label: '9のだんボス',
+    shortLabel: '9のだん',
+    stages: [9],
+    emoji: '🚀',
+  },
 ]
 
-function createRewards(seed: { id: string; shortLabel: string }): Record<BossDifficultyId, BossReward> {
+function createRewards(seed: {
+  id: string
+  shortLabel: string
+}): Record<BossDifficultyId, BossReward> {
   return {
     normal: {
       itemId: `${seed.id}-normal-item`,
@@ -243,7 +302,9 @@ const additionBossSeeds: Array<{
   },
 ]
 
-function createAdditionRewards(seed: (typeof additionBossSeeds)[number]): Record<BossDifficultyId, BossReward> {
+function createAdditionRewards(
+  seed: (typeof additionBossSeeds)[number],
+): Record<BossDifficultyId, BossReward> {
   return {
     normal: {
       ufoId: seed.normalUfoId,
@@ -364,7 +425,7 @@ const subtractionBossSeeds: Array<{
     shortLabel: 'おおひき',
     emoji: '-3',
     description: '3けたのおおきなかずをどっしりけずる、ひきざんさいきょうぼす。',
-    normalTitle: 'おおきいかずこまんだー',
+    normalTitle: 'おおひきこまんだー',
     normalUfoId: 'boss-sub-three-digit-ufo',
     difficultyOverrides: {
       normal: { hp: 10, questionCount: 12 },
@@ -375,7 +436,9 @@ const subtractionBossSeeds: Array<{
   },
 ]
 
-function createSubtractionRewards(seed: (typeof subtractionBossSeeds)[number]): Record<BossDifficultyId, BossReward> {
+function createSubtractionRewards(
+  seed: (typeof subtractionBossSeeds)[number],
+): Record<BossDifficultyId, BossReward> {
   return {
     normal: {
       ufoId: seed.normalUfoId,
@@ -461,7 +524,9 @@ const divisionBossSeeds: Array<{
   },
 ]
 
-function createDivisionRewards(seed: (typeof divisionBossSeeds)[number]): Record<BossDifficultyId, BossReward> {
+function createDivisionRewards(
+  seed: (typeof divisionBossSeeds)[number],
+): Record<BossDifficultyId, BossReward> {
   return {
     normal: {
       ufoId: seed.normalUfoId,
@@ -512,7 +577,10 @@ export const bosses: BossDefinition[] = [
       fast: { timeLimitSeconds: 5 },
       gekimuzu: { timeLimitSeconds: 3.5, questionCount: 10, hp: 10 },
     },
-    rewards: createRewards({ id: 'boss-square', shortLabel: 'クリスタルゴーレム' }),
+    rewards: createRewards({
+      id: 'boss-square',
+      shortLabel: 'クリスタルゴーレム',
+    }),
   },
   {
     id: 'boss-pi',
@@ -544,7 +612,10 @@ export const bosses: BossDefinition[] = [
       fast: { timeLimitSeconds: 5 },
       gekimuzu: { timeLimitSeconds: 1.8, questionCount: 10, hp: 10 },
     },
-    rewards: createRewards({ id: 'boss-development', shortLabel: 'にじいろキング' }),
+    rewards: createRewards({
+      id: 'boss-development',
+      shortLabel: 'にじいろキング',
+    }),
   },
   ...additionBossSeeds.map((seed) => ({
     id: seed.id,
@@ -587,17 +658,20 @@ export const bosses: BossDefinition[] = [
 const itemKinds: BossLimitedItem['kind'][] = ['wear', 'hat', 'furniture', 'background']
 
 export const bossLimitedItems: BossLimitedItem[] = bosses
-  .filter((boss) => boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division')
+  .filter(
+    (boss) =>
+      boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+  )
   .flatMap((boss) =>
     bossItemDifficultyIds.map((difficulty, difficultyIndex) => ({
-    id: boss.rewards[difficulty].itemId ?? `${boss.id}-${difficulty}-item`,
-    bossId: boss.id,
-    difficulty,
-    no: (boss.no - 1) * 3 + difficultyIndex + 1,
-    name: `${boss.shortLabel} ${getBossDifficulty(boss, difficulty).label}トロフィー`,
-    description: `${boss.label}を${getBossDifficulty(boss, difficulty).label}でクリアした証です。`,
-    kind: itemKinds[(boss.no + difficultyIndex) % itemKinds.length],
-    tag: 'ボスげんてい',
+      id: boss.rewards[difficulty].itemId ?? `${boss.id}-${difficulty}-item`,
+      bossId: boss.id,
+      difficulty,
+      no: (boss.no - 1) * 3 + difficultyIndex + 1,
+      name: `${boss.shortLabel} ${getBossDifficulty(boss, difficulty).label}トロフィー`,
+      description: `${boss.label}を${getBossDifficulty(boss, difficulty).label}でクリアした証です。`,
+      kind: itemKinds[(boss.no + difficultyIndex) % itemKinds.length],
+      tag: 'ボスげんてい',
     })),
   )
 

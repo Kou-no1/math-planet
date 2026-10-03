@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import globalCss from '../styles/global.css?raw'
-import { formatAnswerValue, isCorrectAnswer, isRemainderAnswerValue } from '../game-engine/questions/answer'
+import {
+  formatAnswerValue,
+  isCorrectAnswer,
+  isRemainderAnswerValue,
+} from '../game-engine/questions/answer'
 import {
   generateAdditionQuestion,
   generateDivisionQuestion,
@@ -33,10 +37,7 @@ import {
   generateDivisionChoices,
   generateDivisionFactQuestion,
 } from '../game-engine/questions/division'
-import {
-  applyAnswerToScore,
-  calculateSpeedBonus,
-} from '../game-engine/scoring/score'
+import { applyAnswerToScore, calculateSpeedBonus } from '../game-engine/scoring/score'
 import {
   buildSessionSummary,
   buildExpProgressAnimationSteps,
@@ -51,14 +52,8 @@ import {
   judgeNewTitles,
   titleRecordId,
 } from '../game-engine/rewards/titles'
-import {
-  canGrantFinalTitle,
-  grantFinalTitleIfEarned,
-} from '../game-engine/rewards/finalTitle'
-import {
-  createFactProgress,
-  updateFactProgress,
-} from '../game-engine/mastery/mastery'
+import { canGrantFinalTitle, grantFinalTitleIfEarned } from '../game-engine/rewards/finalTitle'
+import { createFactProgress, updateFactProgress } from '../game-engine/mastery/mastery'
 import {
   getMonsterOvercomeProgress,
   getWeakFacts,
@@ -332,8 +327,18 @@ describe('question generation', () => {
     expect(sprite.signature).not.toBe(other.signature)
     expect(sprite.body.length).toBeGreaterThan(20)
     expect(sprite.outline.length).toBeGreaterThan(0)
-    expect(new Set(buddyDefinitions.map((buddy) => buildBuddySprite(buddy.id).signature))).toHaveLength(12)
-    expect(new Set(buddyDefinitions.map((buddy) => buildBuddySprite(buddy.id).body.map((cell) => `${cell.x},${cell.y}`).join('|')))).toHaveLength(12)
+    expect(
+      new Set(buddyDefinitions.map((buddy) => buildBuddySprite(buddy.id).signature)),
+    ).toHaveLength(12)
+    expect(
+      new Set(
+        buddyDefinitions.map((buddy) =>
+          buildBuddySprite(buddy.id)
+            .body.map((cell) => `${cell.x},${cell.y}`)
+            .join('|'),
+        ),
+      ),
+    ).toHaveLength(12)
   })
 
   it('builds deterministic pixel trophies with dan colors and difficulty metals', () => {
@@ -348,7 +353,11 @@ describe('question generation', () => {
       difficulty: 'fast',
     })
     expect(normal.signature).toBe(
-      buildTrophySprite({ danLabel: '1・2', accentDan: 2, difficulty: 'normal' }).signature,
+      buildTrophySprite({
+        danLabel: '1・2',
+        accentDan: 2,
+        difficulty: 'normal',
+      }).signature,
     )
     expect(normal.kind).toBe('medal')
     expect(fast.kind).toBe('trophy')
@@ -390,7 +399,9 @@ describe('question generation', () => {
       buildAdvancedMonsterSprite(pi).signature,
     )
     expect(buildAdvancedMonsterSprite(mixed).cells.length).toBeGreaterThan(20)
-    expect(buildAdvancedBossSprite('square').signature).toBe(buildAdvancedBossSprite('square').signature)
+    expect(buildAdvancedBossSprite('square').signature).toBe(
+      buildAdvancedBossSprite('square').signature,
+    )
     expect(buildAdvancedBossSprite('square').name).toBe('クリスタルゴーレム')
     expect(buildAdvancedBossSprite('pi').rings.length).toBe(2)
     expect(buildAdvancedBossSprite('pi').name).toBe('リングプラネット')
@@ -422,11 +433,17 @@ describe('question generation', () => {
   })
 
   it('filters multiplication pools by minDifficulty and relaxes empty pools', () => {
-    const hardPool = createMultiplicationFactPool({ stages: [7], minDifficulty: 5 })
+    const hardPool = createMultiplicationFactPool({
+      stages: [7],
+      minDifficulty: 5,
+    })
     expect(hardPool.length).toBeGreaterThan(0)
     expect(hardPool.every((fact) => fact.left === 7 && fact.difficulty >= 5)).toBe(true)
 
-    const relaxedPool = createMultiplicationFactPool({ stages: [1], minDifficulty: 5 })
+    const relaxedPool = createMultiplicationFactPool({
+      stages: [1],
+      minDifficulty: 5,
+    })
     expect(relaxedPool.length).toBe(9)
     expect(relaxedPool.every((fact) => fact.left === 1 && fact.difficulty === 1)).toBe(true)
   })
@@ -518,43 +535,57 @@ describe('question generation', () => {
       ]),
     )
 
-    expect(samples['add-within-9'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 1 && left <= 8 && right >= 1 && right <= 8 && left + right <= 9
-    })).toBe(true)
-    expect(samples['add-within-10'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 1 && left <= 9 && right >= 1 && right <= 9 && left + right <= 10
-    })).toBe(true)
-    expect(samples['add-carry-basic'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 1 && left <= 9 && right >= 1 && right <= 9 && left + right >= 11
-    })).toBe(true)
-    expect(samples['add-two-digit-no-carry'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return (
-        left >= 10 &&
-        left <= 99 &&
-        right >= 10 &&
-        right <= 99 &&
-        (left % 10) + (right % 10) <= 9 &&
-        Math.floor(left / 10) + Math.floor(right / 10) <= 9
-      )
-    })).toBe(true)
-    expect(samples['add-two-digit-carry'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 10 && left <= 99 && right >= 10 && right <= 99 && (left % 10) + (right % 10) >= 10
-    })).toBe(true)
-    expect(samples['add-three-digit'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 100 && left <= 999 && right >= 100 && right <= 999
-    })).toBe(true)
+    expect(
+      samples['add-within-9'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 1 && left <= 8 && right >= 1 && right <= 8 && left + right <= 9
+      }),
+    ).toBe(true)
+    expect(
+      samples['add-within-10'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 1 && left <= 9 && right >= 1 && right <= 9 && left + right <= 10
+      }),
+    ).toBe(true)
+    expect(
+      samples['add-carry-basic'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 1 && left <= 9 && right >= 1 && right <= 9 && left + right >= 11
+      }),
+    ).toBe(true)
+    expect(
+      samples['add-two-digit-no-carry'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return (
+          left >= 10 &&
+          left <= 99 &&
+          right >= 10 &&
+          right <= 99 &&
+          (left % 10) + (right % 10) <= 9 &&
+          Math.floor(left / 10) + Math.floor(right / 10) <= 9
+        )
+      }),
+    ).toBe(true)
+    expect(
+      samples['add-two-digit-carry'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return (
+          left >= 10 && left <= 99 && right >= 10 && right <= 99 && (left % 10) + (right % 10) >= 10
+        )
+      }),
+    ).toBe(true)
+    expect(
+      samples['add-three-digit'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 100 && left <= 999 && right >= 100 && right <= 999
+      }),
+    ).toBe(true)
   })
 
   it('keeps generated choices unique and includes close mistakes', () => {
@@ -571,7 +602,12 @@ describe('question generation', () => {
     expect(choices).toContain(75)
     expect(choices.some((choice) => [95, 84, 86, 58].includes(choice))).toBe(true)
 
-    const question = generateAdditionFactQuestion('add-two-digit-carry', 27, 58, createSeededRandom(58))
+    const question = generateAdditionFactQuestion(
+      'add-two-digit-carry',
+      27,
+      58,
+      createSeededRandom(58),
+    )
     expect(question.id).toBe(makeAdditionFactId('add-two-digit-carry', 27, 58))
     expect(question.choices).toContain(85)
   })
@@ -592,44 +628,63 @@ describe('question generation', () => {
       Number(question.metadata?.left) - Number(question.metadata?.right) >= 1
 
     expect(Object.values(samples).flat().every(isPositive)).toBe(true)
-    expect(samples['sub-within-9'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 2 && left <= 9 && right >= 1 && right < left
-    })).toBe(true)
-    expect(samples['sub-within-10'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 2 && left <= 10 && right >= 1 && right < left
-    })).toBe(true)
-    expect(samples['sub-borrow-basic'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 11 && left <= 18 && right >= 1 && right <= 9 && left % 10 < right
-    })).toBe(true)
-    expect(samples['sub-two-digit-no-borrow'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return (
-        left >= 10 &&
-        left <= 99 &&
-        right >= 10 &&
-        right <= 99 &&
-        left > right &&
-        left % 10 >= right % 10 &&
-        Math.floor(left / 10) >= Math.floor(right / 10)
-      )
-    })).toBe(true)
-    expect(samples['sub-two-digit-borrow'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 10 && left <= 99 && right >= 10 && right <= 99 && left > right && left % 10 < right % 10
-    })).toBe(true)
-    expect(samples['sub-three-digit'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return left >= 100 && left <= 999 && right >= 100 && right <= 999 && left > right
-    })).toBe(true)
+    expect(
+      samples['sub-within-9'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 2 && left <= 9 && right >= 1 && right < left
+      }),
+    ).toBe(true)
+    expect(
+      samples['sub-within-10'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 2 && left <= 10 && right >= 1 && right < left
+      }),
+    ).toBe(true)
+    expect(
+      samples['sub-borrow-basic'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 11 && left <= 18 && right >= 1 && right <= 9 && left % 10 < right
+      }),
+    ).toBe(true)
+    expect(
+      samples['sub-two-digit-no-borrow'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return (
+          left >= 10 &&
+          left <= 99 &&
+          right >= 10 &&
+          right <= 99 &&
+          left > right &&
+          left % 10 >= right % 10 &&
+          Math.floor(left / 10) >= Math.floor(right / 10)
+        )
+      }),
+    ).toBe(true)
+    expect(
+      samples['sub-two-digit-borrow'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return (
+          left >= 10 &&
+          left <= 99 &&
+          right >= 10 &&
+          right <= 99 &&
+          left > right &&
+          left % 10 < right % 10
+        )
+      }),
+    ).toBe(true)
+    expect(
+      samples['sub-three-digit'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return left >= 100 && left <= 999 && right >= 100 && right <= 999 && left > right
+      }),
+    ).toBe(true)
     expect(hasCascadingBorrow(304, 176)).toBe(true)
   })
 
@@ -658,50 +713,86 @@ describe('question generation', () => {
       ]),
     )
 
-    expect(samples['divide-no-remainder'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      return right >= 1 && right <= 9 && left % right === 0 && Number(question.answer) >= 1
-    })).toBe(true)
-    expect(samples['divide-with-remainder'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      const quotient = Math.floor(left / right)
-      const remainder = left % right
-      return (
-        right >= 2 &&
-        right <= 9 &&
-        quotient >= 1 &&
-        quotient <= 9 &&
-        remainder >= 1 &&
-        remainder < right &&
-        isRemainderAnswerValue(question.answer)
-      )
-    })).toBe(true)
-    expect(samples['divide-large'].every((question) => {
-      const left = Number(question.metadata?.left)
-      const right = Number(question.metadata?.right)
-      const remainder = left % right
-      return left >= 10 && left <= 99 && right >= 2 && right <= 9 && remainder >= 0 && remainder < right
-    })).toBe(true)
+    expect(
+      samples['divide-no-remainder'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        return right >= 1 && right <= 9 && left % right === 0 && Number(question.answer) >= 1
+      }),
+    ).toBe(true)
+    expect(
+      samples['divide-with-remainder'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        const quotient = Math.floor(left / right)
+        const remainder = left % right
+        return (
+          right >= 2 &&
+          right <= 9 &&
+          quotient >= 1 &&
+          quotient <= 9 &&
+          remainder >= 1 &&
+          remainder < right &&
+          isRemainderAnswerValue(question.answer)
+        )
+      }),
+    ).toBe(true)
+    expect(
+      samples['divide-large'].every((question) => {
+        const left = Number(question.metadata?.left)
+        const right = Number(question.metadata?.right)
+        const remainder = left % right
+        return (
+          left >= 10 &&
+          left <= 99 &&
+          right >= 2 &&
+          right <= 9 &&
+          remainder >= 0 &&
+          remainder < right
+        )
+      }),
+    ).toBe(true)
 
-    const question = generateDivisionFactQuestion('divide-with-remainder', 13, 4, createSeededRandom(134))
+    const question = generateDivisionFactQuestion(
+      'divide-with-remainder',
+      13,
+      4,
+      createSeededRandom(134),
+    )
     expect(question.id).toBe(makeDivisionFactId('divide-with-remainder', 13, 4))
-    expect(question.answer).toEqual({ kind: 'remainder', quotient: 3, remainder: 1 })
+    expect(question.answer).toEqual({
+      kind: 'remainder',
+      quotient: 3,
+      remainder: 1,
+    })
     expect(formatAnswerValue(question.answer)).toBe('3あまり1')
-    expect(isCorrectAnswer(question, { kind: 'remainder', quotient: 3, remainder: 1 })).toBe(true)
-    expect(isCorrectAnswer(question, { kind: 'remainder', quotient: 2, remainder: 5 })).toBe(false)
+    expect(
+      isCorrectAnswer(question, {
+        kind: 'remainder',
+        quotient: 3,
+        remainder: 1,
+      }),
+    ).toBe(true)
+    expect(
+      isCorrectAnswer(question, {
+        kind: 'remainder',
+        quotient: 2,
+        remainder: 5,
+      }),
+    ).toBe(false)
   })
 
   it('generates division choices with unique remainder sets and impossible remainders as mistakes', () => {
     const choices = generateDivisionChoices(3, 1, 4, createSeededRandom(131))
     expect(new Set(choices.map(formatAnswerValue)).size).toBe(4)
-    expect(choices).toContainEqual({ kind: 'remainder', quotient: 3, remainder: 1 })
-    expect(
-      choices.some((choice) =>
-        isRemainderAnswerValue(choice) && choice.remainder >= 4,
-      ),
-    ).toBe(true)
+    expect(choices).toContainEqual({
+      kind: 'remainder',
+      quotient: 3,
+      remainder: 1,
+    })
+    expect(choices.some((choice) => isRemainderAnswerValue(choice) && choice.remainder >= 4)).toBe(
+      true,
+    )
   })
 
   it('generates missing-factor questions with consistent answers', () => {
@@ -715,7 +806,10 @@ describe('question generation', () => {
   })
 
   it('checks numeric and full-width answers', () => {
-    const question = generateMultiplicationQuestion({ stage: 3, rng: () => 0.4 })
+    const question = generateMultiplicationQuestion({
+      stage: 3,
+      rng: () => 0.4,
+    })
     expect(isCorrectAnswer(question, String(question.answer))).toBe(true)
     expect(isCorrectAnswer({ ...question, answer: 12 }, '１２')).toBe(true)
   })
@@ -843,10 +937,7 @@ describe('mastery, review, missions, and storage', () => {
   it('updates mastery without treating one streak as complete mastery', () => {
     let progress = createFactProgress(7, 8)
     progress = updateFactProgress(progress, result())
-    progress = updateFactProgress(
-      progress,
-      result({ answeredAt: '2026-01-02T00:00:00.000Z' }),
-    )
+    progress = updateFactProgress(progress, result({ answeredAt: '2026-01-02T00:00:00.000Z' }))
     expect(progress.correctCount).toBe(2)
     expect(progress.masteryLevel).toBeLessThan(5)
     expect(progress.nextReviewAt).toBeTruthy()
@@ -856,7 +947,12 @@ describe('mastery, review, missions, and storage', () => {
     const weak = createFactProgress(6, 7)
     const strong = createFactProgress(2, 3)
     const facts = {
-      [weak.id]: { ...weak, correctCount: 1, incorrectCount: 4, averageResponseTimeMs: 5000 },
+      [weak.id]: {
+        ...weak,
+        correctCount: 1,
+        incorrectCount: 4,
+        averageResponseTimeMs: 5000,
+      },
       [strong.id]: {
         ...strong,
         correctCount: 5,
@@ -885,7 +981,14 @@ describe('mastery, review, missions, and storage', () => {
       incorrectCount: 1,
       averageResponseTimeMs: 1300,
       masteryLevel: 1 as const,
-      recentResults: [result({ correct: false, questionId: '6x7', expectedAnswer: 42, givenAnswer: 41 })],
+      recentResults: [
+        result({
+          correct: false,
+          questionId: '6x7',
+          expectedAnswer: 42,
+          givenAnswer: 41,
+        }),
+      ],
     }
     expect(isMonsterFact(slowCorrect)).toBe(false)
     expect(isMonsterFact(wrong)).toBe(true)
@@ -1037,8 +1140,20 @@ describe('mastery, review, missions, and storage', () => {
       averageResponseTimeMs: 6200,
       masteryLevel: 2 as const,
       recentResults: [
-        result({ questionId: '8x8', expectedAnswer: 64, givenAnswer: 64, correct: true, responseTimeMs: 6400 }),
-        result({ questionId: '8x8', expectedAnswer: 64, givenAnswer: 64, correct: true, responseTimeMs: 6000 }),
+        result({
+          questionId: '8x8',
+          expectedAnswer: 64,
+          givenAnswer: 64,
+          correct: true,
+          responseTimeMs: 6400,
+        }),
+        result({
+          questionId: '8x8',
+          expectedAnswer: 64,
+          givenAnswer: 64,
+          correct: true,
+          responseTimeMs: 6000,
+        }),
       ],
     }
     const wrong = {
@@ -1047,7 +1162,14 @@ describe('mastery, review, missions, and storage', () => {
       incorrectCount: 1,
       averageResponseTimeMs: 1200,
       masteryLevel: 1 as const,
-      recentResults: [result({ questionId: '7x8', expectedAnswer: 56, givenAnswer: 54, correct: false })],
+      recentResults: [
+        result({
+          questionId: '7x8',
+          expectedAnswer: 56,
+          givenAnswer: 54,
+          correct: false,
+        }),
+      ],
     }
     const v8Save = {
       ...createDefaultSaveData(),
@@ -1061,19 +1183,19 @@ describe('mastery, review, missions, and storage', () => {
       },
     }
     const migrated = migrateSaveData(v8Save)
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.progress.facts[timeOnly.id]).toBeUndefined()
     expect(migrated.progress.facts[wrong.id]).toBeTruthy()
   })
 
   it('generates daily missions and migrates save data', () => {
     const save = createDefaultSaveData()
-    expect(save.version).toBe(14)
+    expect(save.version).toBe(15)
     expect(save.settings.dailyBudgetMinutes).toBe(10)
     expect(save.settings.schoolMode2Enabled).toBe(true)
     expect(generateDailyMissions(save, new Date('2026-01-01')).length).toBe(3)
     const migrated = migrateSaveData({ version: 1 })
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.settings.dailyBudgetMinutes).toBe(10)
     expect(migrated.settings.schoolMode2Enabled).toBe(true)
     expect(migrated.player).toBeNull()
@@ -1114,17 +1236,19 @@ describe('mastery, review, missions, and storage', () => {
     }
 
     const migrated = migrateSaveData(v13Save)
-    expect(migrated.version).toBe(14)
-    expect(migrated.player?.titles).toContain(newTitle)
+    expect(migrated.version).toBe(15)
+    expect(migrated.player?.titles).toContain(titleRecordId(newTitle))
     expect(migrated.player?.titles).not.toContain(oldTitle)
-    expect(migrated.player?.currentTitle).toBe(newTitle)
+    expect(migrated.player?.currentTitle).toBe(titleRecordId(newTitle))
     expect(migrated.progress.collectionRecords).toContainEqual({
       id: collectionRecordId('title', titleRecordId(newTitle)),
       acquiredAt: '2026-01-05T00:00:00.000Z',
       method: 'がくしゅうリザルト',
     })
     expect(migrated.progress.collectionRecords).not.toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('title', titleRecordId(oldTitle)) }),
+      expect.objectContaining({
+        id: collectionRecordId('title', titleRecordId(oldTitle)),
+      }),
     )
   })
 
@@ -1253,7 +1377,9 @@ describe('mastery, review, missions, and storage', () => {
       ],
       finishedAt: '2026-01-04T00:00:00.000Z',
     }
-    const applied = applySessionResult(save, summary, { rewardBudgetPaused: true })
+    const applied = applySessionResult(save, summary, {
+      rewardBudgetPaused: true,
+    })
     expect(applied.summary.earnedCoins).toBe(0)
     expect(applied.summary.earnedExp).toBe(0)
     expect(applied.summary.details?.rewardBudgetPaused).toBe(true)
@@ -1280,24 +1406,29 @@ describe('mastery, review, missions, and storage', () => {
         noticeShownDate: '2026-01-01',
       }),
     ).toBe(false)
-    expect(applyRewardBudgetToSummary({
-      id: 'budget-summary',
-      mode: 'speed',
-      totalQuestions: 1,
-      correctCount: 1,
-      accuracy: 100,
-      averageResponseTimeMs: 1000,
-      maxCombo: 1,
-      score: 100,
-      earnedCoins: 4,
-      earnedExp: 8,
-      newTitles: [],
-      bestUpdated: false,
-      weakFacts: [],
-      masteredFacts: [],
-      results: [result({ questionId: '2x2' })],
-      finishedAt: '2026-01-01T00:00:00.000Z',
-    }, true)).toMatchObject({
+    expect(
+      applyRewardBudgetToSummary(
+        {
+          id: 'budget-summary',
+          mode: 'speed',
+          totalQuestions: 1,
+          correctCount: 1,
+          accuracy: 100,
+          averageResponseTimeMs: 1000,
+          maxCombo: 1,
+          score: 100,
+          earnedCoins: 4,
+          earnedExp: 8,
+          newTitles: [],
+          bestUpdated: false,
+          weakFacts: [],
+          masteredFacts: [],
+          results: [result({ questionId: '2x2' })],
+          finishedAt: '2026-01-01T00:00:00.000Z',
+        },
+        true,
+      ),
+    ).toMatchObject({
       earnedCoins: 0,
       earnedExp: 0,
       details: {
@@ -1650,7 +1781,7 @@ describe('mastery, review, missions, and storage', () => {
             correctCount: right === 8 ? 0 : 8,
             consecutiveCorrect: right === 8 ? 0 : 5,
             averageResponseTimeMs: right === 8 ? 0 : 2200,
-            masteryLevel: right === 8 ? 0 as const : 5 as const,
+            masteryLevel: right === 8 ? (0 as const) : (5 as const),
           },
         ]
       }),
@@ -1882,7 +2013,7 @@ describe('mastery, review, missions, and storage', () => {
     delete (legacy.player as Record<string, unknown>).shipName
     delete (legacy.player as Record<string, unknown>).characterName
     const migrated = migrateSaveData(legacy)
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.player?.shipName).toBe('くくっち')
     expect(migrated.player?.characterName).toBe('くくっち')
   })
@@ -1905,8 +2036,20 @@ describe('mastery, review, missions, and storage', () => {
       averageResponseTimeMs: 6200,
       masteryLevel: 2 as const,
       recentResults: [
-        result({ questionId: '8x8', expectedAnswer: 64, givenAnswer: 64, correct: true, responseTimeMs: 6400 }),
-        result({ questionId: '8x8', expectedAnswer: 64, givenAnswer: 64, correct: true, responseTimeMs: 6000 }),
+        result({
+          questionId: '8x8',
+          expectedAnswer: 64,
+          givenAnswer: 64,
+          correct: true,
+          responseTimeMs: 6400,
+        }),
+        result({
+          questionId: '8x8',
+          expectedAnswer: 64,
+          givenAnswer: 64,
+          correct: true,
+          responseTimeMs: 6000,
+        }),
       ],
     }
     const wrong = {
@@ -1915,7 +2058,14 @@ describe('mastery, review, missions, and storage', () => {
       incorrectCount: 1,
       averageResponseTimeMs: 1200,
       masteryLevel: 1 as const,
-      recentResults: [result({ questionId: '7x8', expectedAnswer: 56, givenAnswer: 54, correct: false })],
+      recentResults: [
+        result({
+          questionId: '7x8',
+          expectedAnswer: 56,
+          givenAnswer: 54,
+          correct: false,
+        }),
+      ],
     }
     const v4Save = {
       ...createDefaultSaveData(),
@@ -1929,7 +2079,7 @@ describe('mastery, review, missions, and storage', () => {
       },
     }
     const migrated = migrateSaveData(v4Save)
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.progress.speedSettings.durationSeconds).toBe(30)
     expect(migrated.progress.speedSettings.selectedStages).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9])
     expect(migrated.progress.rocketBestDistance).toBe(0)
@@ -1980,7 +2130,7 @@ describe('mastery, review, missions, and storage', () => {
       finishedAt: '2026-01-03T00:00:00.000Z',
     }
     const applied = applySessionResult(save, summary)
-    expect(applied.save.version).toBe(14)
+    expect(applied.save.version).toBe(15)
     expect(applied.save.progress.categoryCorrect['multiplication-square']).toBe(3)
     expect(applied.save.progress.collectionRecords).toContainEqual(
       expect.objectContaining({
@@ -2089,13 +2239,7 @@ describe('mastery, review, missions, and storage', () => {
       [3, 4],
       [4, 4],
     ])
-    expect(treasureChestTypes.map((chest) => chest.exhaustedCoins)).toEqual([
-      20,
-      40,
-      70,
-      110,
-      160,
-    ])
+    expect(treasureChestTypes.map((chest) => chest.exhaustedCoins)).toEqual([20, 40, 70, 110, 160])
   })
 
   it('keeps treasure rarity balanced as five themes by four rarities', () => {
@@ -2131,7 +2275,11 @@ describe('mastery, review, missions, and storage', () => {
         ...save.progress,
         monsterBook: ['2x2'],
         ownedTreasureItems: [
-          { id: treasureItems[0].id, acquiredAt: '2026-01-03T00:00:00.000Z', method: 'どうのたからばこから入手' },
+          {
+            id: treasureItems[0].id,
+            acquiredAt: '2026-01-03T00:00:00.000Z',
+            method: 'どうのたからばこから入手',
+          },
         ],
         treasureKeys: {
           ...save.progress.treasureKeys,
@@ -2189,7 +2337,9 @@ describe('mastery, review, missions, and storage', () => {
     expect(isShopTier2Unlocked(coreShopItems.slice(0, 9).map((item) => item.id))).toBe(false)
     expect(isShopTier2Unlocked(coreShopItems.slice(0, 10).map((item) => item.id))).toBe(true)
     expect(suitShopItems.map((item) => item.price)).toEqual([200, 250, 300, 350, 400])
-    expect(suitShopItems.every((item) => item.kind === 'suit' && getShopItemTier(item) === 1)).toBe(true)
+    expect(suitShopItems.every((item) => item.kind === 'suit' && getShopItemTier(item) === 1)).toBe(
+      true,
+    )
     expect(shopBuddyDefinitions.every((buddy) => buddy.source === 'shop')).toBe(true)
     expect(phase15EffectItemIds).toHaveLength(12)
     expect(shopEffectItemIds).toHaveLength(7)
@@ -2201,10 +2351,14 @@ describe('mastery, review, missions, and storage', () => {
     expect(shopItems.find((item) => item.id === rainbowAuraEffectId)?.availableInShop).toBe(false)
     expect(shopItems.find((item) => item.id === galaxySwirlEffectId)?.availableInShop).toBe(false)
     expect(shopItems.find((item) => item.id === addPlusBurstEffectId)?.availableInShop).toBe(false)
-    expect(shopItems.find((item) => item.id === subScatterLightEffectId)?.rewardOrigin).toBeUndefined()
+    expect(
+      shopItems.find((item) => item.id === subScatterLightEffectId)?.rewardOrigin,
+    ).toBeUndefined()
     expect(shopItems.find((item) => item.id === subMinusFlashEffectId)?.rewardOrigin).toBe('sub')
     expect(shopItems.find((item) => item.id === subMinusFlashEffectId)?.availableInShop).toBe(false)
-    expect(shopItems.find((item) => item.id === divideSplitLightEffectId)?.rewardOrigin).toBeUndefined()
+    expect(
+      shopItems.find((item) => item.id === divideSplitLightEffectId)?.rewardOrigin,
+    ).toBeUndefined()
     expect(shopItems.find((item) => item.id === divideFlashEffectId)?.rewardOrigin).toBe('divide')
     expect(shopItems.find((item) => item.id === divideFlashEffectId)?.availableInShop).toBe(false)
   })
@@ -2233,14 +2387,7 @@ describe('mastery, review, missions, and storage', () => {
   it('builds the Phase 15-3 home preview from six ordered layers', () => {
     expect(homeShipPreviewLayers).toEqual(['window', 'ufo', 'body', 'hat', 'buddy', 'effect'])
     const preview = getHomeShipPreviewVisuals(
-      [
-        'rainbow-suit',
-        'rocket-helmet',
-        'planet-view',
-        'crystal-desk',
-        'luna-pet',
-        'comet-burst',
-      ],
+      ['rainbow-suit', 'rocket-helmet', 'planet-view', 'crystal-desk', 'luna-pet', 'comet-burst'],
       'special',
     )
 
@@ -2303,7 +2450,13 @@ describe('mastery, review, missions, and storage', () => {
     }
     const ufo = getUfoForBoss('boss-stage-2')
     expect(ufo).toBeDefined()
-    save.progress.ownedItems = ['basic-room', 'planet-view', 'rocket-helmet', 'rainbow-suit', 'pico-pet']
+    save.progress.ownedItems = [
+      'basic-room',
+      'planet-view',
+      'rocket-helmet',
+      'rainbow-suit',
+      'pico-pet',
+    ]
     save.progress.equippedItems = ['planet-view', 'rocket-helmet', 'rainbow-suit', 'pico-pet']
     save.progress.ownedUfos = [ufo!.id]
     save.progress.equippedUfoId = ufo!.id
@@ -2337,14 +2490,29 @@ describe('mastery, review, missions, and storage', () => {
       'effect',
       'title',
     ])
-    expect(tabs.find((tab) => tab.id === 'window')?.entries.find((entry) => entry.id === 'planet-view')?.selected).toBe(true)
-    expect(tabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === ufo!.id)?.selected).toBe(true)
-    expect(tabs.find((tab) => tab.id === 'suit')?.entries.find((entry) => entry.id === 'rainbow-suit')?.selected).toBe(true)
+    expect(
+      tabs.find((tab) => tab.id === 'window')?.entries.find((entry) => entry.id === 'planet-view')
+        ?.selected,
+    ).toBe(true)
+    expect(
+      tabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === ufo!.id)?.selected,
+    ).toBe(true)
+    expect(
+      tabs.find((tab) => tab.id === 'suit')?.entries.find((entry) => entry.id === 'rainbow-suit')
+        ?.selected,
+    ).toBe(true)
     const buddyTab = tabs.find((tab) => tab.id === 'buddy')
-    expect(buddyTab?.entries.find((entry) => entry.id === monsterBuddySelectionId(2, 3))?.selected).toBe(true)
-    expect(buddyTab?.entries.find((entry) => entry.id === dedicatedBuddySelectionId('star-jelly'))?.owned).toBe(true)
+    expect(
+      buddyTab?.entries.find((entry) => entry.id === monsterBuddySelectionId(2, 3))?.selected,
+    ).toBe(true)
+    expect(
+      buddyTab?.entries.find((entry) => entry.id === dedicatedBuddySelectionId('star-jelly'))
+        ?.owned,
+    ).toBe(true)
     expect(buddyTab?.entries.some((entry) => entry.label === '？？？')).toBe(true)
-    expect(tabs.find((tab) => tab.id === 'title')?.entries.find((entry) => entry.selected)?.label).toBe('れんぞくせいかい')
+    expect(
+      tabs.find((tab) => tab.id === 'title')?.entries.find((entry) => entry.selected)?.label,
+    ).toBe('れんぞくせいかい')
 
     const multiplyTabs = buildCustomInventory(save, 'multiply')
     const addTabs = buildCustomInventory(save, 'add')
@@ -2352,20 +2520,52 @@ describe('mastery, review, missions, and storage', () => {
     const multiplyBuddyTab = multiplyTabs.find((tab) => tab.id === 'buddy')
     const multiplyEffectTab = multiplyTabs.find((tab) => tab.id === 'effect')
     const multiplyTitleTab = multiplyTabs.find((tab) => tab.id === 'title')
-    expect(tabs.find((tab) => tab.id === 'window')?.entries.find((entry) => entry.id === 'planet-view')?.origin).toBe('all')
-    expect(tabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === ufo!.id)?.origin).toBe('multiply')
-    expect(tabs.find((tab) => tab.id === 'buddy')?.entries.find((entry) => entry.id === dedicatedBuddySelectionId('star-jelly'))?.origin).toBe('all')
-    expect(tabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === 'comet-ship')?.origin).toBe('all')
-    expect(tabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === addGatherLightEffectId)?.origin).toBe('all')
-    expect(tabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === galaxySwirlEffectId)?.origin).toBe('multiply')
-    expect(multiplyTabs.find((tab) => tab.id === 'window')?.entries.some((entry) => entry.id === 'planet-view')).toBe(false)
+    expect(
+      tabs.find((tab) => tab.id === 'window')?.entries.find((entry) => entry.id === 'planet-view')
+        ?.origin,
+    ).toBe('all')
+    expect(
+      tabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === ufo!.id)?.origin,
+    ).toBe('multiply')
+    expect(
+      tabs
+        .find((tab) => tab.id === 'buddy')
+        ?.entries.find((entry) => entry.id === dedicatedBuddySelectionId('star-jelly'))?.origin,
+    ).toBe('all')
+    expect(
+      tabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === 'comet-ship')
+        ?.origin,
+    ).toBe('all')
+    expect(
+      tabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === addGatherLightEffectId)?.origin,
+    ).toBe('all')
+    expect(
+      tabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === galaxySwirlEffectId)?.origin,
+    ).toBe('multiply')
+    expect(
+      multiplyTabs
+        .find((tab) => tab.id === 'window')
+        ?.entries.some((entry) => entry.id === 'planet-view'),
+    ).toBe(false)
     expect(multiplyUfoTab?.entries).toHaveLength(
       ufoDefinitions.filter((entry) => (entry.origin ?? 'multiply') === 'multiply').length,
     )
     expect(multiplyUfoTab?.entries.find((entry) => entry.id === ufo!.id)?.origin).toBe('multiply')
-    expect(multiplyBuddyTab?.entries.find((entry) => entry.id === monsterBuddySelectionId(2, 3))?.origin).toBe('multiply')
-    expect(multiplyBuddyTab?.entries.some((entry) => entry.id === dedicatedBuddySelectionId('star-jelly'))).toBe(false)
-    expect(multiplyEffectTab?.entries.find((entry) => entry.id === galaxySwirlEffectId)?.origin).toBe('multiply')
+    expect(
+      multiplyBuddyTab?.entries.find((entry) => entry.id === monsterBuddySelectionId(2, 3))?.origin,
+    ).toBe('multiply')
+    expect(
+      multiplyBuddyTab?.entries.some(
+        (entry) => entry.id === dedicatedBuddySelectionId('star-jelly'),
+      ),
+    ).toBe(false)
+    expect(
+      multiplyEffectTab?.entries.find((entry) => entry.id === galaxySwirlEffectId)?.origin,
+    ).toBe('multiply')
     expect(multiplyEffectTab?.entries.some((entry) => entry.id === 'comet-ship')).toBe(false)
     expect(multiplyTitleTab?.entries.length).toBeGreaterThan(0)
     expect(multiplyTitleTab?.entries.every((entry) => entry.origin === 'multiply')).toBe(true)
@@ -2375,8 +2575,14 @@ describe('mastery, review, missions, and storage', () => {
       additionSunriseUfoId,
     ])
     expect(addTabs.find((tab) => tab.id === 'buddy')?.entries).toHaveLength(18)
-    expect(addTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === addPlusBurstEffectId)?.origin).toBe('add')
-    expect(addTabs.find((tab) => tab.id === 'title')?.entries.some((entry) => entry.origin === 'add')).toBe(true)
+    expect(
+      addTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === addPlusBurstEffectId)?.origin,
+    ).toBe('add')
+    expect(
+      addTabs.find((tab) => tab.id === 'title')?.entries.some((entry) => entry.origin === 'add'),
+    ).toBe(true)
     const subTabs = buildCustomInventory(save, 'subtract')
     expect(subTabs.find((tab) => tab.id === 'ufo')?.entries.map((entry) => entry.id)).toEqual([
       subtractionMinusRingUfoId,
@@ -2384,9 +2590,19 @@ describe('mastery, review, missions, and storage', () => {
       subtractionSunsetUfoId,
     ])
     expect(subTabs.find((tab) => tab.id === 'buddy')?.entries).toHaveLength(18)
-    expect(subTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === subMinusFlashEffectId)?.origin).toBe('sub')
-    expect(subTabs.find((tab) => tab.id === 'effect')?.entries.some((entry) => entry.id === subScatterLightEffectId)).toBe(false)
-    expect(subTabs.find((tab) => tab.id === 'title')?.entries.some((entry) => entry.origin === 'sub')).toBe(true)
+    expect(
+      subTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === subMinusFlashEffectId)?.origin,
+    ).toBe('sub')
+    expect(
+      subTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.some((entry) => entry.id === subScatterLightEffectId),
+    ).toBe(false)
+    expect(
+      subTabs.find((tab) => tab.id === 'title')?.entries.some((entry) => entry.origin === 'sub'),
+    ).toBe(true)
     const divideTabs = buildCustomInventory(save, 'divide')
     expect(divideTabs.find((tab) => tab.id === 'ufo')?.entries.map((entry) => entry.id)).toEqual([
       divisionRingUfoId,
@@ -2394,9 +2610,21 @@ describe('mastery, review, missions, and storage', () => {
       divisionNebulaUfoId,
     ])
     expect(divideTabs.find((tab) => tab.id === 'buddy')?.entries).toHaveLength(12)
-    expect(divideTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === divideFlashEffectId)?.origin).toBe('divide')
-    expect(divideTabs.find((tab) => tab.id === 'effect')?.entries.some((entry) => entry.id === divideSplitLightEffectId)).toBe(false)
-    expect(divideTabs.find((tab) => tab.id === 'title')?.entries.some((entry) => entry.origin === 'divide')).toBe(true)
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === divideFlashEffectId)?.origin,
+    ).toBe('divide')
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.some((entry) => entry.id === divideSplitLightEffectId),
+    ).toBe(false)
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'title')
+        ?.entries.some((entry) => entry.origin === 'divide'),
+    ).toBe(true)
     expect(getHomeShipPreviewVisuals(save.progress.equippedItems).window).toBe('planet-view')
   })
 
@@ -2420,14 +2648,7 @@ describe('mastery, review, missions, and storage', () => {
 
   it('unlocks level icons every five levels without changing save data', () => {
     expect(levelIconDefinitions.map((icon) => icon.unlockLevel)).toEqual([
-      5,
-      10,
-      15,
-      20,
-      25,
-      30,
-      35,
-      40,
+      5, 10, 15, 20, 25, 30, 35, 40,
     ])
     expect(getUnlockedLevelIcons(4)).toHaveLength(0)
     expect(getUnlockedLevelIcons(5).map((icon) => icon.id)).toEqual(['level-star'])
@@ -2482,12 +2703,15 @@ describe('mastery, review, missions, and storage', () => {
         fullOpen.progress.ownedTreasureItems.some((record) => record.id === item.id),
       ),
     ).toBe(true)
-    expect(bossLimitedItems.every((item) => fullOpen.progress.bossItems.includes(item.id))).toBe(true)
+    expect(bossLimitedItems.every((item) => fullOpen.progress.bossItems.includes(item.id))).toBe(
+      true,
+    )
     expect(
-      advancedMonsterDefinitions.every((monster) =>
-        fullOpen.progress.collectionRecords.some(
-          (record) => record.id === collectionRecordId('advanced-monster', monster.id),
-        ) && isAdvancedMonsterOwned(fullOpen.progress.categoryCorrect, monster),
+      advancedMonsterDefinitions.every(
+        (monster) =>
+          fullOpen.progress.collectionRecords.some(
+            (record) => record.id === collectionRecordId('advanced-monster', monster.id),
+          ) && isAdvancedMonsterOwned(fullOpen.progress.categoryCorrect, monster),
       ),
     ).toBe(true)
     expect(
@@ -2525,17 +2749,17 @@ describe('mastery, review, missions, and storage', () => {
     expect(fullOpen.progress.ownedItems).toContain(divideFlashEffectId)
     expect(
       additionRocketDifficulties.every((difficulty) =>
-        fullOpen.player?.titles.includes(difficulty.title),
+        fullOpen.player?.titles.includes(titleRecordId(difficulty.title)),
       ),
     ).toBe(true)
     expect(
       subtractionRocketDifficulties.every((difficulty) =>
-        fullOpen.player?.titles.includes(difficulty.title),
+        fullOpen.player?.titles.includes(titleRecordId(difficulty.title)),
       ),
     ).toBe(true)
     expect(
       divisionRocketDifficulties.every((difficulty) =>
-        fullOpen.player?.titles.includes(difficulty.title),
+        fullOpen.player?.titles.includes(titleRecordId(difficulty.title)),
       ),
     ).toBe(true)
     expect(keyTypes.every((key) => (fullOpen.progress.treasureKeys[key.id]?.count ?? 0) >= 5)).toBe(
@@ -2561,7 +2785,9 @@ describe('mastery, review, missions, and storage', () => {
     expect(bossNormal.rarity).toBe('common')
     expect(bossFast.rarity).toBe('epic')
     expect(final.rarity).toBe('legendary')
-    expect(new Set([common.family, bossNormal.family, bossFast.family, final.family]).size).toBeGreaterThan(1)
+    expect(
+      new Set([common.family, bossNormal.family, bossFast.family, final.family]).size,
+    ).toBeGreaterThan(1)
   })
 
   it('defines all kuku readings as split hiragana parts and hides answers', () => {
@@ -2597,7 +2823,10 @@ describe('mastery, review, missions, and storage', () => {
     }
     expect(isBossUnlocked(boss, unlockedSave)).toBe(true)
     expect(isDifficultyUnlocked(boss, 'hard', unlockedSave)).toBe(false)
-    const withPlayer = { ...createSaveWithPlayer(), progress: unlockedSave.progress }
+    const withPlayer = {
+      ...createSaveWithPlayer(),
+      progress: unlockedSave.progress,
+    }
     const cleared = applyBossClearReward(withPlayer, boss.id, 'normal', 12000).save
     expect(getDifficultyProgress(cleared, boss.id, 'normal').cleared).toBe(true)
     expect(isDifficultyUnlocked(boss, 'hard', cleared)).toBe(true)
@@ -2808,7 +3037,7 @@ describe('mastery, review, missions, and storage', () => {
       },
     })
 
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.progress.bossProgress['boss-square']).toBeUndefined()
     expect(migrated.progress.bossProgress['boss-development']).toBeTruthy()
     expect(migrated.progress.bossItems).not.toContain(squareItem)
@@ -2817,13 +3046,17 @@ describe('mastery, review, missions, and storage', () => {
     expect(migrated.progress.ownedUfos).not.toContain(specialUfoId)
     expect(migrated.progress.ownedUfos).toContain('boss-development-ufo')
     expect(migrated.progress.equippedUfoId).toBe('boss-development-ufo')
-    expect(migrated.player?.titles).not.toContain(squareTitle)
-    expect(migrated.player?.titles).not.toContain('すべてをしるもの')
+    expect(migrated.player?.titles).not.toContain(titleRecordId(squareTitle))
+    expect(migrated.player?.titles).not.toContain(titleRecordId('すべてをしるもの'))
     expect(migrated.progress.collectionRecords).not.toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('boss-item', squareItem) }),
+      expect.objectContaining({
+        id: collectionRecordId('boss-item', squareItem),
+      }),
     )
     expect(migrated.progress.collectionRecords).toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('ufo', 'boss-development-ufo') }),
+      expect.objectContaining({
+        id: collectionRecordId('ufo', 'boss-development-ufo'),
+      }),
     )
   })
 
@@ -2849,7 +3082,7 @@ describe('mastery, review, missions, and storage', () => {
         },
       },
     })
-    expect(migrated.version).toBe(14)
+    expect(migrated.version).toBe(15)
     expect(migrated.progress.bossProgress['boss-square']).toBeTruthy()
   })
 
@@ -2903,7 +3136,11 @@ describe('mastery, review, missions, and storage', () => {
     save.progress.categoryCorrect = {
       [additionAreaCorrectKey('add-within-9')]: 20,
     }
-    expect(additionMonsterDefinitions.filter((monster) => isAdditionMonsterOwned(save.progress.categoryCorrect, monster))).toHaveLength(3)
+    expect(
+      additionMonsterDefinitions.filter((monster) =>
+        isAdditionMonsterOwned(save.progress.categoryCorrect, monster),
+      ),
+    ).toHaveLength(3)
     const progress = calculateBookProgress(save)
     expect(progress.tabs.monsters.total).toBeGreaterThanOrEqual(18)
     expect(progress.tabs.monsters.owned).toBeGreaterThanOrEqual(3)
@@ -2932,12 +3169,22 @@ describe('mastery, review, missions, and storage', () => {
     expect(effectClear.rewardEffectIds).toEqual([addPlusBurstEffectId])
     expect(effectClear.save.progress.ownedItems).toContain(addPlusBurstEffectId)
     expect(effectClear.save.progress.collectionRecords).toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('effect', addPlusBurstEffectId) }),
+      expect.objectContaining({
+        id: collectionRecordId('effect', addPlusBurstEffectId),
+      }),
     )
 
     const addTabs = buildCustomInventory(effectClear.save, 'add')
-    expect(addTabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === additionPlusRingUfoId)?.owned).toBe(true)
-    expect(addTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === addPlusBurstEffectId)?.owned).toBe(true)
+    expect(
+      addTabs
+        .find((tab) => tab.id === 'ufo')
+        ?.entries.find((entry) => entry.id === additionPlusRingUfoId)?.owned,
+    ).toBe(true)
+    expect(
+      addTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === addPlusBurstEffectId)?.owned,
+    ).toBe(true)
   })
 
   it('grants addition master and legend titles separately from legacy all-gekimuzu rewards', () => {
@@ -2947,13 +3194,13 @@ describe('mastery, review, missions, and storage', () => {
     for (const boss of additionBosses) {
       save = applyBossClearReward(save, boss.id, 'normal', 8000).save
     }
-    expect(save.player?.titles).toContain(additionMasterTitle)
+    expect(save.player?.titles).toContain(titleRecordId(additionMasterTitle))
     for (const boss of additionBosses) {
       save = applyBossClearReward(save, boss.id, 'hard', 8000).save
       save = applyBossClearReward(save, boss.id, 'fast', 8000).save
       save = applyBossClearReward(save, boss.id, 'gekimuzu', 8000).save
     }
-    expect(save.player?.titles).toContain(additionLegendTitle)
+    expect(save.player?.titles).toContain(titleRecordId(additionLegendTitle))
     expect(save.progress.ownedUfos).not.toContain(specialUfoId)
     expect(save.progress.ownedItems).not.toContain(galaxySwirlEffectId)
   })
@@ -2965,7 +3212,11 @@ describe('mastery, review, missions, and storage', () => {
     save.progress.categoryCorrect = {
       [subtractionAreaCorrectKey('sub-within-9')]: 20,
     }
-    expect(subtractionMonsterDefinitions.filter((monster) => isSubtractionMonsterOwned(save.progress.categoryCorrect, monster))).toHaveLength(3)
+    expect(
+      subtractionMonsterDefinitions.filter((monster) =>
+        isSubtractionMonsterOwned(save.progress.categoryCorrect, monster),
+      ),
+    ).toHaveLength(3)
     const progress = calculateBookProgress(save)
     expect(progress.tabs.monsters.total).toBeGreaterThan(additionMonsterDefinitions.length)
   })
@@ -2990,12 +3241,22 @@ describe('mastery, review, missions, and storage', () => {
     expect(effectClear.rewardEffectIds).toEqual([subMinusFlashEffectId])
     expect(effectClear.save.progress.ownedItems).toContain(subMinusFlashEffectId)
     expect(effectClear.save.progress.collectionRecords).toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('effect', subMinusFlashEffectId) }),
+      expect.objectContaining({
+        id: collectionRecordId('effect', subMinusFlashEffectId),
+      }),
     )
 
     const subTabs = buildCustomInventory(effectClear.save, 'subtract')
-    expect(subTabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === subtractionMinusRingUfoId)?.owned).toBe(true)
-    expect(subTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === subMinusFlashEffectId)?.owned).toBe(true)
+    expect(
+      subTabs
+        .find((tab) => tab.id === 'ufo')
+        ?.entries.find((entry) => entry.id === subtractionMinusRingUfoId)?.owned,
+    ).toBe(true)
+    expect(
+      subTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === subMinusFlashEffectId)?.owned,
+    ).toBe(true)
   })
 
   it('grants subtraction master and legend titles separately from legacy all-gekimuzu rewards', () => {
@@ -3005,13 +3266,13 @@ describe('mastery, review, missions, and storage', () => {
     for (const boss of subtractionBosses) {
       save = applyBossClearReward(save, boss.id, 'normal', 8000).save
     }
-    expect(save.player?.titles).toContain(subtractionMasterTitle)
+    expect(save.player?.titles).toContain(titleRecordId(subtractionMasterTitle))
     for (const boss of subtractionBosses) {
       save = applyBossClearReward(save, boss.id, 'hard', 8000).save
       save = applyBossClearReward(save, boss.id, 'fast', 8000).save
       save = applyBossClearReward(save, boss.id, 'gekimuzu', 8000).save
     }
-    expect(save.player?.titles).toContain(subtractionLegendTitle)
+    expect(save.player?.titles).toContain(titleRecordId(subtractionLegendTitle))
     expect(save.progress.ownedUfos).not.toContain(specialUfoId)
     expect(save.progress.ownedItems).not.toContain(galaxySwirlEffectId)
   })
@@ -3023,7 +3284,11 @@ describe('mastery, review, missions, and storage', () => {
     save.progress.categoryCorrect = {
       [divisionAreaCorrectKey('divide-no-remainder')]: 20,
     }
-    expect(divisionMonsterDefinitions.filter((monster) => isDivisionMonsterOwned(save.progress.categoryCorrect, monster))).toHaveLength(4)
+    expect(
+      divisionMonsterDefinitions.filter((monster) =>
+        isDivisionMonsterOwned(save.progress.categoryCorrect, monster),
+      ),
+    ).toHaveLength(4)
     const progress = calculateBookProgress(save)
     expect(progress.tabs.monsters.total).toBeGreaterThan(
       additionMonsterDefinitions.length + subtractionMonsterDefinitions.length,
@@ -3051,13 +3316,27 @@ describe('mastery, review, missions, and storage', () => {
     expect(effectClear.rewardEffectIds).toEqual([divideFlashEffectId])
     expect(effectClear.save.progress.ownedItems).toContain(divideFlashEffectId)
     expect(effectClear.save.progress.collectionRecords).toContainEqual(
-      expect.objectContaining({ id: collectionRecordId('effect', divideFlashEffectId) }),
+      expect.objectContaining({
+        id: collectionRecordId('effect', divideFlashEffectId),
+      }),
     )
 
     const divideTabs = buildCustomInventory(effectClear.save, 'divide')
-    expect(divideTabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === divisionRingUfoId)?.owned).toBe(true)
-    expect(divideTabs.find((tab) => tab.id === 'ufo')?.entries.find((entry) => entry.id === divisionQuarterUfoId)?.owned).toBe(true)
-    expect(divideTabs.find((tab) => tab.id === 'effect')?.entries.find((entry) => entry.id === divideFlashEffectId)?.owned).toBe(true)
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'ufo')
+        ?.entries.find((entry) => entry.id === divisionRingUfoId)?.owned,
+    ).toBe(true)
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'ufo')
+        ?.entries.find((entry) => entry.id === divisionQuarterUfoId)?.owned,
+    ).toBe(true)
+    expect(
+      divideTabs
+        .find((tab) => tab.id === 'effect')
+        ?.entries.find((entry) => entry.id === divideFlashEffectId)?.owned,
+    ).toBe(true)
   })
 
   it('grants division master and legend titles separately from legacy all-gekimuzu rewards', () => {
@@ -3067,13 +3346,13 @@ describe('mastery, review, missions, and storage', () => {
     for (const boss of divisionBosses) {
       save = applyBossClearReward(save, boss.id, 'normal', 8000).save
     }
-    expect(save.player?.titles).toContain(divisionMasterTitle)
+    expect(save.player?.titles).toContain(titleRecordId(divisionMasterTitle))
     for (const boss of divisionBosses) {
       save = applyBossClearReward(save, boss.id, 'hard', 8000).save
       save = applyBossClearReward(save, boss.id, 'fast', 8000).save
       save = applyBossClearReward(save, boss.id, 'gekimuzu', 8000).save
     }
-    expect(save.player?.titles).toContain(divisionLegendTitle)
+    expect(save.player?.titles).toContain(titleRecordId(divisionLegendTitle))
     expect(save.progress.ownedUfos).not.toContain(specialUfoId)
     expect(save.progress.ownedItems).not.toContain(galaxySwirlEffectId)
   })
@@ -3109,7 +3388,10 @@ describe('mastery, review, missions, and storage', () => {
     })
     expect(speedQuestion.id.startsWith('divide:divide-with-remainder:')).toBe(true)
     expect(isRemainderAnswerValue(speedQuestion.answer)).toBe(true)
-    const playQuestion = createMiniQuestion({ planet: 'divide', divisionRocketDifficulty: 'normal' })
+    const playQuestion = createMiniQuestion({
+      planet: 'divide',
+      divisionRocketDifficulty: 'normal',
+    })
     expect(playQuestion.id.startsWith('divide:')).toBe(true)
     expect(playQuestion.category.startsWith('division-')).toBe(true)
   })
@@ -3150,7 +3432,11 @@ describe('mastery, review, missions, and storage', () => {
         maxCombo: 14,
         score: 100,
         results: Array.from({ length: 14 }, () =>
-          result({ questionId: 'add:add-within-9:1+1', prompt: '1 + 1', expectedAnswer: 2 }),
+          result({
+            questionId: 'add:add-within-9:1+1',
+            prompt: '1 + 1',
+            expectedAnswer: 2,
+          }),
         ),
         finishedAt: '2026-01-05T00:00:00.000Z',
       })
@@ -3204,7 +3490,11 @@ describe('mastery, review, missions, and storage', () => {
         maxCombo: 14,
         score: 100,
         results: Array.from({ length: 14 }, () =>
-          result({ questionId: 'sub:sub-within-9:5-2', prompt: '5 - 2', expectedAnswer: 3 }),
+          result({
+            questionId: 'sub:sub-within-9:5-2',
+            prompt: '5 - 2',
+            expectedAnswer: 3,
+          }),
         ),
         finishedAt: '2026-01-05T00:00:00.000Z',
       })
@@ -3238,7 +3528,9 @@ describe('mastery, review, missions, and storage', () => {
     expect(Number(normalQuestion.metadata?.right)).toBeGreaterThanOrEqual(2)
     expect(Number(normalQuestion.metadata?.right)).toBeLessThanOrEqual(9)
     expect(Number(normalQuestion.metadata?.remainder)).toBeGreaterThanOrEqual(1)
-    expect(Number(normalQuestion.metadata?.remainder)).toBeLessThan(Number(normalQuestion.metadata?.right))
+    expect(Number(normalQuestion.metadata?.remainder)).toBeLessThan(
+      Number(normalQuestion.metadata?.right),
+    )
     expect(isRemainderAnswerValue(normalQuestion.answer)).toBe(true)
 
     const hardQuestion = createMiniQuestion({
@@ -3258,7 +3550,11 @@ describe('mastery, review, missions, and storage', () => {
         maxCombo: 14,
         score: 100,
         results: Array.from({ length: 14 }, () =>
-          result({ questionId: 'divide:divide-with-remainder:13/4', prompt: '13 ÷ 4', expectedAnswer: { kind: 'remainder', quotient: 3, remainder: 1 } }),
+          result({
+            questionId: 'divide:divide-with-remainder:13/4',
+            prompt: '13 ÷ 4',
+            expectedAnswer: { kind: 'remainder', quotient: 3, remainder: 1 },
+          }),
         ),
         finishedAt: '2026-01-05T00:00:00.000Z',
       })
@@ -3280,7 +3576,10 @@ describe('mastery, review, missions, and storage', () => {
   })
 
   it('grants the all-gekimuzu reward once when the final boss clears', () => {
-    const legacyBosses = bosses.filter((boss) => boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division')
+    const legacyBosses = bosses.filter(
+      (boss) =>
+        boss.group !== 'addition' && boss.group !== 'subtraction' && boss.group !== 'division',
+    )
     const finalBoss = legacyBosses[legacyBosses.length - 1]
     let save: SaveData = createSaveWithPlayer()
     for (const boss of legacyBosses.slice(0, -1)) {
@@ -3293,7 +3592,7 @@ describe('mastery, review, missions, and storage', () => {
     expect(finalClear.rewardUfoIds).toContain(specialUfoId)
     expect(finalClear.rewardEffectIds).toContain(galaxySwirlEffectId)
     expect(finalClear.rewardTitles).not.toContain(allGekimuzuTitle)
-    expect(finalClear.save.player?.titles).not.toContain(allGekimuzuTitle)
+    expect(finalClear.save.player?.titles).not.toContain(titleRecordId(allGekimuzuTitle))
     expect(finalClear.save.progress.ownedUfos).toContain(specialUfoId)
     expect(finalClear.save.progress.ownedItems).toContain(galaxySwirlEffectId)
     expect(finalClear.save.progress.collectionRecords).toContainEqual(
@@ -3315,18 +3614,39 @@ describe('mastery, review, missions, and storage', () => {
 
   it('grants the final title only after all completion conditions are met', () => {
     const acquiredAt = '2026-01-05T00:00:00.000Z'
-    const monsterBook = createMultiplicationFactPool({ stages: [1, 2, 3, 4, 5, 6, 7, 8, 9] })
-      .map((fact) => `${fact.left}x${fact.right}`)
+    const monsterBook = createMultiplicationFactPool({
+      stages: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    }).map((fact) => `${fact.left}x${fact.right}`)
     const bossProgress = Object.fromEntries(
       bosses.map((boss) => [
         boss.id,
         {
           bossId: boss.id,
           difficulties: {
-            normal: { cleared: true, clearCount: 1, firstClearedAt: acquiredAt, bestTimeMs: 1000 },
-            hard: { cleared: true, clearCount: 1, firstClearedAt: acquiredAt, bestTimeMs: 1000 },
-            fast: { cleared: true, clearCount: 1, firstClearedAt: acquiredAt, bestTimeMs: 1000 },
-            gekimuzu: { cleared: true, clearCount: 1, firstClearedAt: acquiredAt, bestTimeMs: 1000 },
+            normal: {
+              cleared: true,
+              clearCount: 1,
+              firstClearedAt: acquiredAt,
+              bestTimeMs: 1000,
+            },
+            hard: {
+              cleared: true,
+              clearCount: 1,
+              firstClearedAt: acquiredAt,
+              bestTimeMs: 1000,
+            },
+            fast: {
+              cleared: true,
+              clearCount: 1,
+              firstClearedAt: acquiredAt,
+              bestTimeMs: 1000,
+            },
+            gekimuzu: {
+              cleared: true,
+              clearCount: 1,
+              firstClearedAt: acquiredAt,
+              bestTimeMs: 1000,
+            },
           },
         },
       ]),
@@ -3371,10 +3691,10 @@ describe('mastery, review, missions, and storage', () => {
     expect(canGrantFinalTitle(save)).toBe(true)
     const granted = grantFinalTitleIfEarned(save, acquiredAt)
     expect(granted.granted).toBe(true)
-    expect(granted.save.player?.titles).toContain(allGekimuzuTitle)
+    expect(granted.save.player?.titles).toContain(titleRecordId(allGekimuzuTitle))
     expect(granted.save.progress.collectionRecords).toContainEqual(
       expect.objectContaining({
-        id: collectionRecordId('title', allGekimuzuTitle),
+        id: collectionRecordId('title', titleRecordId(allGekimuzuTitle)),
       }),
     )
     expect(grantFinalTitleIfEarned(granted.save, acquiredAt).granted).toBe(false)

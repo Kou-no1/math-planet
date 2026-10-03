@@ -1,6 +1,9 @@
 import { advancedMonsterDefinitions } from '../../data/advancedMonsters'
 import { additionAreaCorrectKey, additionMonsterDefinitions } from '../../data/additionMonsters'
-import { subtractionAreaCorrectKey, subtractionMonsterDefinitions } from '../../data/subtractionMonsters'
+import {
+  subtractionAreaCorrectKey,
+  subtractionMonsterDefinitions,
+} from '../../data/subtractionMonsters'
 import { divisionAreaCorrectKey, divisionMonsterDefinitions } from '../../data/divisionMonsters'
 import { bossDifficulties, bosses, bossLimitedItems } from '../../data/bosses'
 import { buddyDefinitions } from '../../data/buddies'
@@ -12,7 +15,7 @@ import { collectionRecordId, addCollectionRecords } from '../collection/collecti
 import { createFactProgress } from '../mastery/mastery'
 import { createMultiplicationFactPool } from '../questions/factDifficulty'
 import { expRequiredForLevel } from '../rewards/rewards'
-import { getTitleDefinitions, titleRecordId } from '../rewards/titles'
+import { getTitleDefinitions, grantPlayerTitles, titleRecordId } from '../rewards/titles'
 import type { SaveData, BossDifficultyProgress } from '../../types/save'
 
 export const debugMenuTapThreshold = 5
@@ -67,7 +70,11 @@ export function setDebugLevel(save: SaveData, level: number): SaveData {
   }
 }
 
-export function addAllDebugKeys(save: SaveData, count = 5, acquiredAt = new Date().toISOString()): SaveData {
+export function addAllDebugKeys(
+  save: SaveData,
+  count = 5,
+  acquiredAt = new Date().toISOString(),
+): SaveData {
   const treasureKeys = { ...save.progress.treasureKeys }
   for (const key of keyTypes) {
     const current = treasureKeys[key.id] ?? { count: 0, firstAcquiredAt: null }
@@ -91,7 +98,9 @@ export function fullOpenDebugSaveData(
 ): SaveData {
   const facts = { ...save.progress.facts }
   const monsterBook = new Set(save.progress.monsterBook)
-  for (const fact of createMultiplicationFactPool({ stages: [1, 2, 3, 4, 5, 6, 7, 8, 9] })) {
+  for (const fact of createMultiplicationFactPool({
+    stages: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  })) {
     const factId = `${fact.left}x${fact.right}`
     const current = facts[factId] ?? createFactProgress(fact.left, fact.right)
     facts[factId] = {
@@ -107,7 +116,10 @@ export function fullOpenDebugSaveData(
   const titleDefinitions = getTitleDefinitions()
   const categoryCorrect: Record<string, number> = {
     ...save.progress.categoryCorrect,
-    'multiplication-square': Math.max(save.progress.categoryCorrect['multiplication-square'] ?? 0, 40),
+    'multiplication-square': Math.max(
+      save.progress.categoryCorrect['multiplication-square'] ?? 0,
+      40,
+    ),
     'pi-multiplication': Math.max(save.progress.categoryCorrect['pi-multiplication'] ?? 0, 40),
     development: Math.max(save.progress.categoryCorrect.development ?? 0, 40),
   }
@@ -123,20 +135,17 @@ export function fullOpenDebugSaveData(
     const key = divisionAreaCorrectKey(monster.areaId)
     categoryCorrect[key] = Math.max(categoryCorrect[key] ?? 0, monster.threshold)
   }
-  const titles = Array.from(
-    new Set([...(save.player?.titles ?? []), ...titleDefinitions.map((title) => title.label)]),
-  )
   const bossProgress = { ...save.progress.bossProgress }
   for (const boss of bosses) {
     bossProgress[boss.id] = {
       bossId: boss.id,
-      difficulties: Object.keys(bossDifficulties).reduce<SaveData['progress']['bossProgress'][string]['difficulties']>(
-        (progress, difficultyId) => {
-          progress[difficultyId as keyof typeof bossDifficulties] = clearedDifficultyProgress(acquiredAt)
-          return progress
-        },
-        {},
-      ),
+      difficulties: Object.keys(bossDifficulties).reduce<
+        SaveData['progress']['bossProgress'][string]['difficulties']
+      >((progress, difficultyId) => {
+        progress[difficultyId as keyof typeof bossDifficulties] =
+          clearedDifficultyProgress(acquiredAt)
+        return progress
+      }, {}),
     }
   }
 
@@ -144,11 +153,10 @@ export function fullOpenDebugSaveData(
     {
       ...save,
       player: save.player
-        ? {
-            ...save.player,
-            titles,
-            currentTitle: titles.at(-1) ?? save.player.currentTitle,
-          }
+        ? grantPlayerTitles(
+            save.player,
+            titleDefinitions.map((title) => title.id),
+          )
         : save.player,
       progress: {
         ...save.progress,
@@ -156,8 +164,12 @@ export function fullOpenDebugSaveData(
         monsterBook: Array.from(monsterBook),
         categoryCorrect,
         bossProgress,
-        bossItems: Array.from(new Set([...save.progress.bossItems, ...bossLimitedItems.map((item) => item.id)])),
-        ownedItems: Array.from(new Set([...save.progress.ownedItems, ...shopItems.map((item) => item.id)])),
+        bossItems: Array.from(
+          new Set([...save.progress.bossItems, ...bossLimitedItems.map((item) => item.id)]),
+        ),
+        ownedItems: Array.from(
+          new Set([...save.progress.ownedItems, ...shopItems.map((item) => item.id)]),
+        ),
         ownedTreasureItems: Array.from(
           new Map(
             [
@@ -170,7 +182,9 @@ export function fullOpenDebugSaveData(
             ].map((record) => [record.id, record]),
           ).values(),
         ),
-        ownedUfos: Array.from(new Set([...save.progress.ownedUfos, ...ufoDefinitions.map((ufo) => ufo.id)])),
+        ownedUfos: Array.from(
+          new Set([...save.progress.ownedUfos, ...ufoDefinitions.map((ufo) => ufo.id)]),
+        ),
         collectionRecords: addCollectionRecords(save.progress.collectionRecords, [
           ...buddyDefinitions.map((buddy) => ({
             kind: 'buddy',

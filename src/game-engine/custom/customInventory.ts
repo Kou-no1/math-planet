@@ -1,4 +1,4 @@
-import { getTitleDefinitions } from '../rewards/titles'
+import { getTitleDefinitions, titleRecordId } from '../rewards/titles'
 import { createMultiplicationFactPool } from '../questions/factDifficulty'
 import { getCollectionRecord } from '../collection/collectionRecords'
 import {
@@ -28,16 +28,13 @@ import {
 } from '../../data/shopItems'
 import { ufoDefinitions, type UfoDefinition } from '../../data/ufos'
 import type { SaveData } from '../../types/save'
-import type { OperationRewardOrigin, RewardOrigin, VisibleStarFilter } from '../../types/rewardOrigin'
+import type {
+  OperationRewardOrigin,
+  RewardOrigin,
+  VisibleStarFilter,
+} from '../../types/rewardOrigin'
 
-export type CustomTabId =
-  | 'window'
-  | 'ufo'
-  | 'hat'
-  | 'suit'
-  | 'buddy'
-  | 'effect'
-  | 'title'
+export type CustomTabId = 'window' | 'ufo' | 'hat' | 'suit' | 'buddy' | 'effect' | 'title'
 
 export type CustomEntryKind =
   | 'shop'
@@ -106,7 +103,13 @@ export const customStarFilterLabels: Record<CustomStarFilter, string> = {
   divide: 'わりざん',
 }
 
-export const customStarFilterOrder: CustomStarFilter[] = ['all', 'add', 'subtract', 'multiply', 'divide']
+export const customStarFilterOrder: CustomStarFilter[] = [
+  'all',
+  'add',
+  'subtract',
+  'multiply',
+  'divide',
+]
 
 export const customRewardOrigins: CustomRewardOrigin[] = [
   'all',
@@ -319,11 +322,11 @@ function dedicatedBuddyEntries(save: SaveData): CustomInventoryEntry[] {
 }
 
 function titleEntries(save: SaveData): CustomInventoryEntry[] {
-  const ownedTitles = new Set(save.player?.titles ?? [])
+  const ownedTitles = new Set((save.player?.titles ?? []).map(titleRecordId))
   return getTitleDefinitions()
     .map((title) => {
       const record = getCollectionRecord(save.progress.collectionRecords, 'title', title.id)
-      const owned = ownedTitles.has(title.label)
+      const owned = ownedTitles.has(title.id)
       return {
         id: title.id,
         tabId: 'title',
@@ -332,7 +335,7 @@ function titleEntries(save: SaveData): CustomInventoryEntry[] {
         label: owned ? title.label : '？？？',
         description: owned ? title.description : 'まだ見つけていないしょうごう',
         owned,
-        selected: owned && save.player?.currentTitle === title.label,
+        selected: owned && titleRecordId(save.player?.currentTitle ?? '') === title.id,
         method: record?.method ?? title.method,
         acquiredAt: record?.acquiredAt ?? null,
       } satisfies CustomInventoryEntry

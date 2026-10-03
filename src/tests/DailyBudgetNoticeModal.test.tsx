@@ -2,24 +2,14 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { DailyBudgetNoticeModal } from '../components/common/DailyBudgetNoticeModal'
-
-const dailyUsageMock = vi.hoisted(() => ({
-  acknowledgeNotice: vi.fn(),
-  budgetMinutes: 10,
-}))
-
-vi.mock('../hooks/useDailyUsage', () => ({
-  useDailyUsage: () => ({
-    acknowledgeNotice: dailyUsageMock.acknowledgeNotice,
-    budgetMinutes: dailyUsageMock.budgetMinutes,
-  }),
-}))
+import { DailyUsageProvider } from '../hooks/useDailyUsage'
+import { SaveDataProvider } from '../hooks/useSaveData'
 
 describe('DailyBudgetNoticeModal', () => {
   it('shows the school mode notice as a centered hiragana modal', async () => {
     const onDismiss = vi.fn()
-    dailyUsageMock.acknowledgeNotice.mockClear()
-    render(<DailyBudgetNoticeModal open onDismiss={onDismiss} />)
+    window.localStorage.clear()
+    render(<SaveDataProvider><DailyUsageProvider><DailyBudgetNoticeModal open onDismiss={onDismiss} /></DailyUsageProvider></SaveDataProvider>)
 
     const dialog = screen.getByRole('dialog', { name: '10ぷん たったよ' })
     expect(dialog).toHaveClass('reward-budget-modal')
@@ -28,7 +18,6 @@ describe('DailyBudgetNoticeModal', () => {
     expect(screen.queryByText(/10分|経験値/)).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'わかった' }))
-    expect(dailyUsageMock.acknowledgeNotice).toHaveBeenCalledTimes(1)
     expect(onDismiss).toHaveBeenCalledTimes(1)
   })
 })

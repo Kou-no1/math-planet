@@ -4,7 +4,7 @@ import type {
   MultiplicationFactProgress,
 } from '../../types/game'
 import { addDays, isDifferentLocalDay } from '../../utils/date'
-import { makeMultiplicationFactId } from '../questions/factIds'
+import { factFromResult, makeMultiplicationFactId } from '../questions/factIds'
 
 export function createFactProgress(
   left: number,
@@ -29,6 +29,8 @@ export function createFactProgress(
     lastAnsweredAt: null,
     nextReviewAt: null,
     masteryLevel: 0,
+    firstIncorrectAt: null,
+    overcomeAt: null,
     recentResults: [],
   }
 }
@@ -36,6 +38,7 @@ export function createFactProgress(
 function calculateMastery(
   progress: MultiplicationFactProgress,
   answeredDifferentDay: boolean,
+  responseTargetMs: number,
 ): MultiplicationFactProgress['masteryLevel'] {
   const attempts = progress.correctCount + progress.incorrectCount
   const accuracy = attempts === 0 ? 0 : progress.correctCount / attempts
@@ -43,7 +46,7 @@ function calculateMastery(
   if (
     progress.correctCount >= 7 &&
     progress.consecutiveCorrect >= 4 &&
-    progress.averageResponseTimeMs <= 3000 &&
+    progress.averageResponseTimeMs <= responseTargetMs &&
     answeredDifferentDay
   ) {
     return 5
@@ -87,13 +90,26 @@ export function updateFactProgress(
           (current.averageResponseTimeMs * attempts + result.responseTimeMs) /
             (attempts + 1),
         )
-  const answeredDifferentDay = isDifferentLocalDay(
-    current.lastAnsweredAt,
-    result.answeredAt,
-  )
+  const answeredDifferentDay = isDifferentLocalDay(current.lastAnsweredAt, result.answeredAt)
+  const firstIncorrectAt =
+    current.firstIncorrectAt ??
+    current.recentResults.filter((entry) => !entry.correct).at(-1)?.answeredAt ??
+    (!result.correct ? result.answeredAt : null)
+  const correctCount = current.correctCount + (result.correct ? 1 : 0)
+  const overcomeAt =
+    current.overcomeAt ??
+    (result.correct &&
+    correctCount >= 3 &&
+    firstIncorrectAt &&
+    result.answeredAt > firstIncorrectAt &&
+    isDifferentLocalDay(firstIncorrectAt, result.answeredAt)
+      ? result.answeredAt
+      : null)
   const next = {
     ...current,
-    correctCount: current.correctCount + (result.correct ? 1 : 0),
+    correctCount,
+    firstIncorrectAt,
+    overcomeAt,
     incorrectCount: current.incorrectCount + (result.correct ? 0 : 1),
     consecutiveCorrect: result.correct ? current.consecutiveCorrect + 1 : 0,
     averageResponseTimeMs,
@@ -110,6 +126,29 @@ export function updateFactProgress(
   }
   return {
     ...next,
-    masteryLevel: calculateMastery(next, answeredDifferentDay),
+    masteryLevel:
+      result.correct && current.masteryLevel === 5
+        ? 5
+        : calculateMastery(
+            next,
+            answeredDifferentDay,
+            (current.operation ?? 'multiplication') === 'multiplication'
+              ? 3000
+              : Math.max(5000, (result.difficulty ?? 3) * 2500),
+          ),
   }
+}
+
+export function factsWithResults(
+  facts: Record<string, MultiplicationFactProgress>,
+  results: AnswerResult[],
+): Record<string, MultiplicationFactProgress> {
+  const next = { ...facts }
+  for (const result of results) {
+    const parsed = factFromResult(result)
+    if (!parsed) continue
+    const current = next[parsed.id] ?? createFactProgress(parsed.left, parsed.right, parsed)
+    next[parsed.id] = updateFactProgress(current, result)
+  }
+  return next
 }

@@ -1,7 +1,4 @@
-import {
-  getDivisionAreaById,
-  type DivisionAreaId,
-} from '../../data/planets'
+import { getDivisionAreaById, type DivisionAreaId } from '../../data/planets'
 import type { AnswerValue, Question, RemainderAnswerValue } from '../../types/game'
 import { answerValueKey } from './answer'
 import { makeDivisionFactId } from './factIds'
@@ -40,7 +37,11 @@ export function divisionAnswerValue(quotient: number, remainder: number): Answer
 }
 
 function remainderAnswer(quotient: number, remainder: number): RemainderAnswerValue {
-  return { kind: 'remainder', quotient: Math.max(0, quotient), remainder: Math.max(0, remainder) }
+  return {
+    kind: 'remainder',
+    quotient: Math.max(0, quotient),
+    remainder: Math.max(0, remainder),
+  }
 }
 
 function quotient(left: number, right: number): number {
@@ -51,7 +52,7 @@ function remainder(left: number, right: number): number {
   return left % right
 }
 
-function matchesArea(areaId: DivisionAreaId, left: number, right: number): boolean {
+export function matchesDivisionArea(areaId: DivisionAreaId, left: number, right: number): boolean {
   if (right <= 0) {
     return false
   }
@@ -69,7 +70,7 @@ function matchesArea(areaId: DivisionAreaId, left: number, right: number): boole
   return left >= 10 && left <= 99 && right >= 2 && right <= 9
 }
 
-function difficultyForDivision(areaId: DivisionAreaId, left: number, right: number): number {
+export function difficultyForDivision(areaId: DivisionAreaId, left: number, right: number): number {
   const q = quotient(left, right)
   const r = remainder(left, right)
   if (areaId === 'divide-no-remainder') {
@@ -95,18 +96,14 @@ function createPair(areaId: DivisionAreaId, left: number, right: number): Divisi
   }
 }
 
-export function createDivisionFactPool({
-  areaId,
-}: {
-  areaId: DivisionAreaId
-}): DivisionFactPair[] {
+export function createDivisionFactPool({ areaId }: { areaId: DivisionAreaId }): DivisionFactPair[] {
   const area = getDivisionAreaById(areaId)
   const pairs: DivisionFactPair[] = []
   if (areaId === 'divide-no-remainder') {
     for (let right = area.generator.minDivisor; right <= area.generator.maxDivisor; right += 1) {
       for (let q = 1; q <= 9; q += 1) {
         const left = right * q
-        if (matchesArea(areaId, left, right)) {
+        if (matchesDivisionArea(areaId, left, right)) {
           pairs.push(createPair(areaId, left, right))
         }
       }
@@ -118,7 +115,7 @@ export function createDivisionFactPool({
       for (let q = 1; q <= 9; q += 1) {
         for (let r = 1; r < right; r += 1) {
           const left = right * q + r
-          if (matchesArea(areaId, left, right)) {
+          if (matchesDivisionArea(areaId, left, right)) {
             pairs.push(createPair(areaId, left, right))
           }
         }
@@ -128,7 +125,7 @@ export function createDivisionFactPool({
   }
   for (let left = area.generator.minDividend; left <= area.generator.maxDividend; left += 1) {
     for (let right = area.generator.minDivisor; right <= area.generator.maxDivisor; right += 1) {
-      if (matchesArea(areaId, left, right)) {
+      if (matchesDivisionArea(areaId, left, right)) {
         pairs.push(createPair(areaId, left, right))
       }
     }
@@ -150,7 +147,7 @@ export function generateDivisionFactPair(
     if (areaId === 'divide-with-remainder') {
       left = right * randomInt(1, 9, rng) + randomInt(1, right - 1, rng)
     }
-    if (matchesArea(areaId, left, right)) {
+    if (matchesDivisionArea(areaId, left, right)) {
       return createPair(areaId, left, right)
     }
   }
@@ -232,7 +229,8 @@ export function generateDivisionFactQuestion(
     prompt: `${left} ÷ ${right}`,
     answer,
     choices: generateDivisionChoices(q, r, right, rng),
-    explanation: r === 0 ? `${right} × ${q} = ${left}` : `${right} × ${q} = ${left - r}、あまり${r}`,
+    explanation:
+      r === 0 ? `${right} × ${q} = ${left}` : `${right} × ${q} = ${left - r}、あまり${r}`,
     difficulty: difficultyForDivision(areaId, left, right),
     metadata: {
       left,

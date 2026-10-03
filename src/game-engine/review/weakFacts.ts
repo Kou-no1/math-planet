@@ -24,6 +24,9 @@ function accuracyOf(fact: MultiplicationFactProgress): number {
 }
 
 function firstWrongDate(fact: MultiplicationFactProgress): string | null {
+  if (fact.firstIncorrectAt) {
+    return fact.firstIncorrectAt
+  }
   const wrongs = fact.recentResults.filter((result) => !result.correct)
   return wrongs.at(-1)?.answeredAt ?? null
 }
@@ -33,6 +36,9 @@ function isDifferentDay(left: string, right: string): boolean {
 }
 
 export function isMonsterOvercome(fact: MultiplicationFactProgress): boolean {
+  if (fact.overcomeAt) {
+    return true
+  }
   if (fact.incorrectCount <= 0 || fact.correctCount < 3) {
     return false
   }
@@ -100,7 +106,13 @@ export function getWeakFacts(
   filter: FactReviewFilter = {},
 ): MultiplicationFactProgress[] {
   return Object.values(facts)
-    .filter((fact) => attemptsOf(fact) > 0 && matchesFactFilter(fact, filter))
+    .filter(
+      (fact) =>
+        attemptsOf(fact) > 0 &&
+        fact.incorrectCount > 0 &&
+        !isMonsterOvercome(fact) &&
+        matchesFactFilter(fact, filter),
+    )
     .sort((left, right) => {
       const leftAccuracy = accuracyOf(left)
       const rightAccuracy = accuracyOf(right)
@@ -141,7 +153,11 @@ export function getDueReviewFacts(
 }
 
 export function isMonsterFact(fact: MultiplicationFactProgress): boolean {
-  return factOperationOf(fact) === 'multiplication' && fact.incorrectCount > 0 && !isMonsterOvercome(fact)
+  return (
+    factOperationOf(fact) === 'multiplication' &&
+    fact.incorrectCount > 0 &&
+    !isMonsterOvercome(fact)
+  )
 }
 
 export function getMonsterFacts(
@@ -171,19 +187,16 @@ export function getReviewQueue(
     ...getWeakFacts(facts, limit, filter),
     ...getDueReviewFacts(facts, now, limit, filter),
   ].filter((fact) => {
-      if (seen.has(fact.id)) {
-        return false
-      }
-      seen.add(fact.id)
-      return true
-    })
+    if (seen.has(fact.id)) {
+      return false
+    }
+    seen.add(fact.id)
+    return true
+  })
   return queue.slice(0, limit)
 }
 
-function matchesFactFilter(
-  fact: MultiplicationFactProgress,
-  filter: FactReviewFilter,
-): boolean {
+function matchesFactFilter(fact: MultiplicationFactProgress, filter: FactReviewFilter): boolean {
   const parsed = parseFactId(fact.id)
   const operation = fact.operation ?? parsed?.operation
   if (filter.operation && operation !== filter.operation) {

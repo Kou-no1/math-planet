@@ -1,5 +1,6 @@
 import type { GameSessionSummary } from '../../types/game'
-import type { SaveData } from '../../types/save'
+import type { PlayerData, SaveData } from '../../types/save'
+import { parseFactId } from '../questions/factIds'
 import {
   allGekimuzuTitle,
   additionLegendTitle,
@@ -66,6 +67,15 @@ function hasDivisionResult(summary: GameSessionSummary): boolean {
   return summary.results.some((result) => result.questionId.startsWith('divide:'))
 }
 
+function hasOnlyMultiplicationResults(summary: GameSessionSummary): boolean {
+  return (
+    summary.results.length > 0 &&
+    summary.results.every(
+      (result) => parseFactId(result.questionId)?.operation === 'multiplication',
+    )
+  )
+}
+
 function maxCorrectComboForAdditionArea(summary: GameSessionSummary, areaId: string): number {
   let combo = 0
   let maxCombo = 0
@@ -111,12 +121,14 @@ function maxCorrectComboForDivisionArea(summary: GameSessionSummary, areaId: str
 export const titleRules: TitleRule[] = [
   {
     id: 'first-step',
+    origin: 'all',
     label: 'はじめのいっぽ',
     description: 'くくっちといっしょに学びはじめたしるし',
     canEarn: (summary) => summary.totalQuestions > 0,
   },
   {
     id: 'no-miss-10',
+    origin: 'all',
     label: 'れんぞくせいかい',
     description: '10もん以上をまちがえずにこたえたしるし',
     canEarn: (summary) => summary.totalQuestions >= 10 && summary.accuracy === 100,
@@ -126,6 +138,7 @@ export const titleRules: TitleRule[] = [
     label: 'かけざんビギナー',
     description: 'テンポよく正解できたしるし',
     canEarn: (summary) =>
+      hasOnlyMultiplicationResults(summary) &&
       summary.totalQuestions >= 5 &&
       summary.accuracy >= 80 &&
       summary.averageResponseTimeMs <= 5000,
@@ -135,12 +148,14 @@ export const titleRules: TitleRule[] = [
     label: 'くくファイター',
     description: 'すばやく正解をかさねたしるし',
     canEarn: (summary) =>
+      hasOnlyMultiplicationResults(summary) &&
       summary.totalQuestions >= 8 &&
       summary.accuracy >= 80 &&
       summary.averageResponseTimeMs <= 4000,
   },
   {
     id: 'combo-5',
+    origin: 'all',
     label: 'ごれんぞくスター',
     description: '5れんぞく正解をきめたしるし',
     canEarn: (summary) => summary.maxCombo >= 5,
@@ -222,32 +237,49 @@ export const titleRules: TitleRule[] = [
   })),
 ]
 
-function uniqueTitleDefinitions(definitions: TitleDefinition[]): TitleDefinition[] {
-  const seen = new Set<string>()
-  return definitions.filter((definition) => {
-    if (seen.has(definition.id)) {
-      return false
-    }
-    seen.add(definition.id)
-    return true
-  })
+export function titleRecordId(title: string): string {
+  return (
+    getTitleDefinitions().find(
+      (definition) => definition.id === title || definition.label === title,
+    )?.id ?? title
+  )
 }
 
-export function titleRecordId(title: string): string {
-  return title
+export function titleLabel(title: string | null | undefined): string {
+  return (
+    getTitleDefinitions().find((definition) => definition.id === title)?.label ??
+    title ??
+    'はじめのいっぽ'
+  )
 }
+
+export function hasTitle(player: PlayerData | null, title: string): boolean {
+  const id = titleRecordId(title)
+  return Boolean(player?.titles.some((owned) => titleRecordId(owned) === id))
+}
+
+export function grantPlayerTitles(player: PlayerData, titles: string[]): PlayerData {
+  return {
+    ...player,
+    titles: Array.from(new Set([...player.titles, ...titles].map(titleRecordId))),
+    currentTitle: titleRecordId(player.currentTitle || titles[0] || 'はじめのいっぽ'),
+  }
+}
+
+let titleDefinitionsCache: TitleDefinition[] | undefined
 
 export function getTitleDefinitions(): TitleDefinition[] {
+  if (titleDefinitionsCache) return titleDefinitionsCache
   const ruleDefinitions = titleRules.map((rule) => ({
-    id: titleRecordId(rule.label),
+    id: `rule:${rule.id}`,
     label: rule.label,
     description: rule.description,
     origin: rule.origin,
     method: 'がくしゅうリザルト',
   }))
   const bossDefinitions = bosses.flatMap((boss) =>
-    Object.values(boss.rewards).map((reward) => ({
-      id: titleRecordId(reward.title),
+    Object.entries(boss.rewards).map(([difficultyId, reward]) => ({
+      id: `boss:${boss.id}:${difficultyId}`,
       label: reward.title,
       origin:
         boss.group === 'addition'
@@ -264,73 +296,70 @@ export function getTitleDefinitions(): TitleDefinition[] {
           : `${boss.label} ボスバトル`,
     })),
   )
-  return uniqueTitleDefinitions([
+  titleDefinitionsCache = [
     ...ruleDefinitions,
     ...bossDefinitions,
     {
-      id: titleRecordId(legendaryBossTitle),
+      id: 'master:multiply:fast',
       label: legendaryBossTitle,
       description: 'すべてのボスをマスターしたしるし',
       method: '全ボスさいそく',
     },
     {
-      id: titleRecordId(allGekimuzuTitle),
+      id: 'master:complete',
       label: allGekimuzuTitle,
       description: 'すべてのげきムズをこえたしるし',
       method: '全ボスげきムズ',
     },
     {
-      id: titleRecordId(additionMasterTitle),
+      id: 'master:add:normal',
       label: additionMasterTitle,
       description: 'たしざんの6えりあぼすをすべてたおしたしるし',
       method: 'たしざんぜんえりあぼす',
       origin: 'add' as const,
     },
     {
-      id: titleRecordId(additionLegendTitle),
+      id: 'master:add:gekimuzu',
       label: additionLegendTitle,
       description: 'たしざんの6えりあをげきむずでこえたしるし',
       method: 'たしざんぜんえりあげきむず',
       origin: 'add' as const,
     },
     {
-      id: titleRecordId(subtractionMasterTitle),
+      id: 'master:subtract:normal',
       label: subtractionMasterTitle,
       description: 'ひきざんの6えりあぼすをすべてたおしたしるし',
       method: 'ひきざんぜんえりあぼす',
       origin: 'sub' as const,
     },
     {
-      id: titleRecordId(subtractionLegendTitle),
+      id: 'master:subtract:gekimuzu',
       label: subtractionLegendTitle,
       description: 'ひきざんの6えりあをげきむずでこえたしるし',
       method: 'ひきざんぜんえりあげきむず',
       origin: 'sub' as const,
     },
     {
-      id: titleRecordId(divisionMasterTitle),
+      id: 'master:divide:normal',
       label: divisionMasterTitle,
       description: 'わりざんの3エリアボスをすべてたおしたしるし',
       method: 'わりざん全エリアボス',
       origin: 'divide' as const,
     },
     {
-      id: titleRecordId(divisionLegendTitle),
+      id: 'master:divide:gekimuzu',
       label: divisionLegendTitle,
       description: 'わりざんの3エリアをげきムズでこえたしるし',
       method: 'わりざん全エリアげきムズ',
       origin: 'divide' as const,
     },
-  ])
+  ]
+  return titleDefinitionsCache
 }
 
-export function judgeNewTitles(
-  summary: GameSessionSummary,
-  save: SaveData,
-): string[] {
-  const owned = new Set(save.player?.titles ?? [])
+export function judgeNewTitles(summary: GameSessionSummary, save: SaveData): string[] {
   return titleRules
-    .filter((rule) => !owned.has(rule.label) && rule.canEarn(summary, save))
+    .filter((rule) => !hasTitle(save.player, rule.label) && rule.canEarn(summary, save))
     .map((rule) => rule.label)
 }
 
@@ -357,6 +386,8 @@ export function getTitleEmblemDefinition(title: string | null | undefined): Titl
       accent: '#dffcff',
     }
   }
+
+  title = titleLabel(title)
 
   if (title === allGekimuzuTitle) {
     return {
@@ -436,9 +467,35 @@ export function getTitleEmblemDefinition(title: string | null | undefined): Titl
               ? 'boss-advanced'
               : 'boss-basic',
       rarity: rarityByDifficulty[bossReward.difficultyId] ?? 'rare',
-      motif: isAddition ? '+' : isSubtraction ? '-' : isDivision ? '÷' : bossReward.difficultyId === 'gekimuzu' ? '★' : isAdvanced ? '◇' : '×',
-      primary: isAddition ? '#ffd35c' : isSubtraction ? '#ff9f5f' : isDivision ? '#9fd3ff' : isAdvanced ? '#a78bfa' : '#5be9f4',
-      secondary: isAddition ? '#34d399' : isSubtraction ? '#a8552a' : isDivision ? '#6750d8' : isAdvanced ? '#22d3ee' : '#4d75ff',
+      motif: isAddition
+        ? '+'
+        : isSubtraction
+          ? '-'
+          : isDivision
+            ? '÷'
+            : bossReward.difficultyId === 'gekimuzu'
+              ? '★'
+              : isAdvanced
+                ? '◇'
+                : '×',
+      primary: isAddition
+        ? '#ffd35c'
+        : isSubtraction
+          ? '#ff9f5f'
+          : isDivision
+            ? '#9fd3ff'
+            : isAdvanced
+              ? '#a78bfa'
+              : '#5be9f4',
+      secondary: isAddition
+        ? '#34d399'
+        : isSubtraction
+          ? '#a8552a'
+          : isDivision
+            ? '#6750d8'
+            : isAdvanced
+              ? '#22d3ee'
+              : '#4d75ff',
       accent: bossReward.difficultyId === 'normal' ? '#e8fbff' : '#ffd86a',
     }
   }

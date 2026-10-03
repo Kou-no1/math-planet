@@ -10,15 +10,14 @@ import {
   getCollectionRecord,
 } from '../collection/collectionRecords'
 import { createMultiplicationFactPool } from '../questions/factDifficulty'
-import { getTitleDefinitions, titleRecordId } from './titles'
+import { getTitleDefinitions, grantPlayerTitles, hasTitle, titleRecordId } from './titles'
 
 const customShopLayers = new Set(['window', 'hat', 'wear', 'effect'])
 
 export function hasAllOtherTitlesForFinalTitle(save: SaveData): boolean {
-  const ownedTitles = new Set(save.player?.titles ?? [])
   return getTitleDefinitions()
     .filter((title) => title.label !== allGekimuzuTitle)
-    .every((title) => ownedTitles.has(title.label))
+    .every((title) => hasTitle(save.player, title.id))
 }
 
 export function hasAllCustomItemsForFinalTitle(save: SaveData): boolean {
@@ -36,23 +35,25 @@ export function hasAllCustomItemsForFinalTitle(save: SaveData): boolean {
 
 export function hasAllMonstersForFinalTitle(save: SaveData): boolean {
   const monsterBook = new Set(save.progress.monsterBook)
-  const hasBasicMonsters = createMultiplicationFactPool({ stages: [1, 2, 3, 4, 5, 6, 7, 8, 9] })
-    .every((fact) => monsterBook.has(`${fact.left}x${fact.right}`))
-  const hasAdvancedMonsters = advancedMonsterDefinitions.every((monster) =>
-    isAdvancedMonsterOwned(save.progress.categoryCorrect, monster) ||
-    Boolean(getCollectionRecord(save.progress.collectionRecords, 'advanced-monster', monster.id)),
+  const hasBasicMonsters = createMultiplicationFactPool({
+    stages: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  }).every((fact) => monsterBook.has(`${fact.left}x${fact.right}`))
+  const hasAdvancedMonsters = advancedMonsterDefinitions.every(
+    (monster) =>
+      isAdvancedMonsterOwned(save.progress.categoryCorrect, monster) ||
+      Boolean(getCollectionRecord(save.progress.collectionRecords, 'advanced-monster', monster.id)),
   )
   return hasBasicMonsters && hasAdvancedMonsters
 }
 
 export function hasAllBossesForFinalTitle(save: SaveData): boolean {
-  return bosses.every((boss) =>
-    save.progress.bossProgress[boss.id]?.difficulties.gekimuzu?.cleared === true,
+  return bosses.every(
+    (boss) => save.progress.bossProgress[boss.id]?.difficulties.gekimuzu?.cleared === true,
   )
 }
 
 export function canGrantFinalTitle(save: SaveData): boolean {
-  if (!save.player || save.player.titles.includes(allGekimuzuTitle)) {
+  if (!save.player || hasTitle(save.player, allGekimuzuTitle)) {
     return false
   }
   return (
@@ -76,11 +77,7 @@ export function grantFinalTitleIfEarned(
     granted: true,
     save: {
       ...save,
-      player: {
-        ...save.player,
-        titles: Array.from(new Set([...save.player.titles, allGekimuzuTitle])),
-        currentTitle: allGekimuzuTitle,
-      },
+      player: grantPlayerTitles(save.player, [allGekimuzuTitle]),
       progress: {
         ...save.progress,
         collectionRecords: addCollectionRecords(

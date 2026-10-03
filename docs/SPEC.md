@@ -1,4 +1,17 @@
-# 掛け算を遊びながら習得するWEBアプリ「くくっち」開発指示書 v2
+# けいさんのほし「くくっち」仕様書
+
+## 現在有効な仕様（Phase 16）
+
+- ホームは星選択。たしざん・ひきざん・かけざん・わりざんの4星を公開する。
+- たしざん6エリア、ひきざん6エリア、わりざん3エリアと九九・高学年を、既存の解答・報酬システムで扱う。
+- 正答は整数・既存の円周率文字列・商とあまりの構造化値。あまりは割る数未満でなければ正答にしない。
+- カスタム装備は全星共通。入手元分類は静的定義の `origin` に保持する。
+- Phase 16の学習記録・復習・設定・世界観の仕様は末尾の25.33節を正とする。
+- SaveDataはv15。旧記録は演算を推測せず保持し、JSON読み込みにも同じ移行処理を適用する。
+- GitHub Pages用のHashRouterと `base: '/math-planet/'` を維持する。
+- 本文のPhase 1〜B4は開発履歴を含む。矛盾がある場合はこの現行仕様と新しいフェーズの確定仕様を優先する。
+
+以下は初期MVPからの仕様・開発履歴です。
 
 あなたは、子ども向け教育WEBアプリの設計・実装・テストを担当する、シニアフルスタックエンジニア兼UI/UXデザイナーです。
 
@@ -23,7 +36,7 @@
 
 整理後は確認を待たず、そのまま実装を開始してください。
 
-ただし、今回のセッションで実装するのは Phase 1〜2（遊べるMVP）までです。Phase 2完了時点で停止し、26章の形式で報告してください。Phase 3以降は、人間によるレビュー後に別途指示します。
+初期MVPの実装範囲はPhase 1〜2でした。現在の作業範囲は先頭の現行仕様と最新の開発依頼に従います。
 
 ---
 
@@ -492,14 +505,14 @@ CSS、絵文字、SVG、簡単な図形などを使い、あとから正式な�
 
 ## スピード称号例
 
-| 条件       | 称号       |
-| -------- | -------- |
+| 条件          | 称号             |
+| ------------- | ---------------- |
 | 平均5秒以内   | かけざんビギナー |
-| 平均4秒以内   | くくファイター  |
-| 平均3秒以内   | くくマスター   |
-| 平均2秒以内   | でんこうせっか  |
-| 平均1.5秒以内 | 九九の神速    |
-| 平均1秒以内   | くくレジェンド  |
+| 平均4秒以内   | くくファイター   |
+| 平均3秒以内   | くくマスター     |
+| 平均2秒以内   | でんこうせっか   |
+| 平均1.5秒以内 | 九九の神速       |
+| 平均1秒以内   | くくレジェンド   |
 
 称号判定には最低回答数を設定し、1問だけ速く答えた場合は付与しないでください。
 
@@ -572,19 +585,19 @@ CSS、絵文字、SVG、簡単な図形などを使い、あとから正式な�
 
 ```ts
 type MultiplicationFactProgress = {
-  id: string;
-  left: number;
-  right: number;
-  correctCount: number;
-  incorrectCount: number;
-  consecutiveCorrect: number;
-  averageResponseTimeMs: number;
-  bestResponseTimeMs: number | null;
-  lastAnsweredAt: string | null;
-  nextReviewAt: string | null;
-  masteryLevel: 0 | 1 | 2 | 3 | 4 | 5;
-  recentResults: AnswerResult[];
-};
+  id: string
+  left: number
+  right: number
+  correctCount: number
+  incorrectCount: number
+  consecutiveCorrect: number
+  averageResponseTimeMs: number
+  bestResponseTimeMs: number | null
+  lastAnsweredAt: string | null
+  nextReviewAt: string | null
+  masteryLevel: 0 | 1 | 2 | 3 | 4 | 5
+  recentResults: AnswerResult[]
+}
 ```
 
 習熟度：
@@ -735,11 +748,11 @@ src/
 
 ```ts
 type SaveData = {
-  version: number;
-  player: PlayerData;
-  progress: ProgressData;
-  settings: SettingsData;
-};
+  version: number
+  player: PlayerData
+  progress: ProgressData
+  settings: SettingsData
+}
 ```
 
 将来の仕様変更に備えて、マイグレーション処理を用意してください。
@@ -834,16 +847,16 @@ src/
 
 ```ts
 type QuestionCategory =
-  | "multiplication-basic"
-  | "multiplication-square"
-  | "pi-multiplication"
-  | "two-digit-times-one-digit"
-  | "two-digit-times-two-digit"
-  | "divisors"
-  | "multiples"
-  | "prime"
-  | "gcd"
-  | "lcm";
+  | 'multiplication-basic'
+  | 'multiplication-square'
+  | 'pi-multiplication'
+  | 'two-digit-times-one-digit'
+  | 'two-digit-times-two-digit'
+  | 'divisors'
+  | 'multiples'
+  | 'prime'
+  | 'gcd'
+  | 'lcm'
 ```
 
 7章の発展計算カテゴリを網羅できるよう、必要に応じてカテゴリを追加してください。
@@ -856,15 +869,15 @@ type QuestionCategory =
 
 ```ts
 type Question = {
-  id: string;
-  category: QuestionCategory;
-  prompt: string;
-  answer: number | string;
-  choices?: Array<number | string>;
-  explanation?: string;
-  difficulty: number;
-  metadata?: Record<string, unknown>;
-};
+  id: string
+  category: QuestionCategory
+  prompt: string
+  answer: number | string
+  choices?: Array<number | string>
+  explanation?: string
+  difficulty: number
+  metadata?: Record<string, unknown>
+}
 ```
 
 4択の誤答候補は、正答と重複しないようにしてください。
@@ -999,7 +1012,7 @@ npm run preview
 
 各Phase終了時に `npm run lint` / `npm run test` / `npm run build` を実行し、すべて成功した状態でgit commitしてください（コミットメッセージにPhase番号を含める）。
 
-**今回のセッションではPhase 1〜2のみを実装し、Phase 2完了時点で停止して26章の形式で報告してください。Phase 3以降は次の指示で進めます。**
+**以下のPhase 1〜2の範囲制限は初期MVPの履歴です。現行フェーズの範囲は先頭の現行仕様を参照してください。**
 
 ## Phase 1：基盤
 
@@ -2139,6 +2152,53 @@ npm run build
 - 図かんのモンスター進捗には、九九、たしざん、ひきざんに加えてわりざんモンスター12体を含める。
 - デバッグのフルオープンは、動的なアイテム列挙と `progress.categoryCorrect` の補完で、わりざんのごほうびも解放する。
 - 新しいトップレベル保存フィールドは追加しない。既存の `progress.facts`、`progress.categoryCorrect`、`collectionRecords`、所持アイテム定義で表現するため、SaveDataバージョンは据え置く。
+
+# 25.33 Phase 16 学習整合性・4星共通の復習・探検の土台
+
+この節は既存の称号保存、復習、ミッション、ベスト記録に関する記述より優先する。新しい星や報酬の大量追加ではなく、既存4星を同じ品質で遊べるようにする。
+
+## 学習記録と適応
+
+- `facts` に `firstIncorrectAt` と `overcomeAt` を追加する。克服の条件は累計3正解以上と、最初の誤答より後の日の正解。直近8件から誤答が消えても判定根拠を失わない。
+- 克服済みの収集実績は再度間違えても取り消さない。最近の誤答は適応選択と次の復習には引き続き反映する。
+- 「にがて」は実際の誤答があり、未克服の式に限定する。遅かっただけの式をモンスター扱いしない。復習待ちの式は別に選択できる。
+- 学習中の未保存の解答も次の適応選択に反映する。問題の難度は生成ルールから導出し、習熟度で置き換えない。保存済み式は選択エリアの生成条件を再検証する。
+- 2連続ミス後は同じエリア内の易しい難度から出題する。3桁エリアでも空の易問集合を選ばない。
+
+## 星別の復習・ミッション・記録
+
+- `/review?planet=add|subtract|divide|multiply` で同じ復習ループを使う。わり算の商とあまりの4択も既存判定を流用する。
+- 各星で「10問正解」「おすすめエリアで5問」「5問連続」の3ミッションを用意する。表示と進捗は演算・エリア/段で絞る。連続正解は1プレイ内の実際の最大連続数で、複数プレイを足さない。
+- 記録キーは星、モード、難易度、エリア/段、制限時間、解答方式、練習の問題数を含む。ロケットのランダムな出題内訳はミックスとして固定し、ボス記録はボスIDと難易度で分ける。
+- 条件の分からない旧ベストは `legacy:`、旧履歴は `planet:'legacy'` で保全し、新記録と比較しない。既存ロケット距離も保全する。
+
+## 称号の安定ID
+
+- `player.titles`、`player.currentTitle`、称号の `collectionRecords` は表示名でなく、`rule:` / `boss:` / `master:` の安定IDで保存する。表示・図鑑・カスタムではIDから名称を解決する。
+- 称号を取得しても装備中の称号は変えない。カスタムと設定で明示的に選び替える。
+- 「かけざんビギナー」「くくファイター」は九九の解答からのみ取得する。演算共通の初回・連続正解称号は `origin:'all'` とする。
+- 重複していたひき算大きい数ボスの通常称号は「おおひきこまんだー」に分離する。旧名称の復元先はボス撃破記録で判断し、両方撃破済みなら両方の称号を保持する。
+
+## ヒントと練習設定
+
+- たし算のダミーは桁数に合う候補に限定する。1桁問題には±100や不自然な桁の逆順を混ぜず、繰り上がり忘れ・±10・±1を使う。
+
+- おぼえる・復習に明示的な「ひんと」ボタンを置く。ネイティブdialogの中央モーダルに、位ごとの繰り上がり、波及的な繰り下がり、等分とあまりの関係を表示する。プレイ領域や4択を押し広げない。
+- 解答結果にヒント利用を残し、履歴に利用数を保存する。今回は報酬・マスター条件を変更せず、翌日の独力定着の評価は次フェーズとする。
+- 先生コード内に「じっくり（5問・4択）」「いつもの（9問・4択）」「ちゃれんじ（15問・入力）」と個別設定を置く。加減算の整数入力を有効にし、わり算・円周率は4択を維持する。
+- 静かな設定は音声・効果音を切り、背景の動きを減らす。時間バジェットはプリセットで変更しない。適応選択を有効にする。
+- 解答フィードバック中の数字入力、空入力の確定、ヒント表示中のキーボード解答を防ぐ。
+- 開始前の選択領域はグリッドの確保高に合わせて伸ばし、内部だけをスクロールする。タイトル・解答方式・開始ボタンを重ねない。
+
+## 世界観・性能・保存
+
+- 各星に既存の累計正解から導出する探検目的を置く。たし算は温室、ひき算は補給基地、九九は環の発電所、わり算は配達港。次に練習するエリアへ直接進める。
+- 探検進捗は既存のエリア/段20正解を使い、別の保存フィールド・報酬・連続ログイン義務は追加しない。今後の世界観と教師向け集計は `docs/ROADMAP.md` に分ける。
+- 重いゲーム・図鑑・カスタムの画面はルート単位で遅延読み込みする。
+- SaveData v14からv15へ移行する。既存の所持品、装備、コイン、EXP、取得日時、学習実績を保全する。旧版の原文は最初の書き込み前に `kukucchi-save-before-migration` へ保存し、設定からダウンロードできる。
+- localStorageの保存失敗は警告し、そのセッションのメモリ上の状態は保持する。壊れた旧JSONも置き換え前に原文を退避する。JSON出力・読み込みはv15に対応する。
+- `scripts/verify-learning.mjs` は隔離したブラウザで320×568、390×844、768×1024、1366×768の導線、開始前の重なりと解答方式切り替え、九九とたし算の実際の4択タップ、ヒント、あまり判定、設定保存を検証する。
+- Viteの `base` は引き続き `/math-planet/`。
 
 # 26. 完了報告の形式
 

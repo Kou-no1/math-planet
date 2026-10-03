@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { DAILY_USAGE_STORAGE_KEY, createDailyUsageState } from '../game-engine/school/dailyUsage'
 import { createLocalStorageDailyUsageRepository } from '../repositories/dailyUsageRepository'
-import { createLocalStorageSaveRepository } from '../repositories/saveRepository'
+import {
+  createLocalStorageSaveRepository,
+  PRE_MIGRATION_BACKUP_KEY,
+} from '../repositories/saveRepository'
 import { createDefaultSaveData } from '../storage/saveData'
 
 describe('save repository', () => {
@@ -44,5 +47,27 @@ describe('save repository', () => {
     expect(window.localStorage.getItem(DAILY_USAGE_STORAGE_KEY)).toContain('usedMs')
     expect(JSON.stringify(saveRepository.load())).not.toContain('usedMs')
     expect(JSON.stringify(saveRepository.load())).not.toContain(DAILY_USAGE_STORAGE_KEY)
+  })
+
+  it('backs up the exact old save before the first migration write', () => {
+    window.localStorage.clear()
+    const old = { ...createDefaultSaveData(), version: 14 }
+    const raw = JSON.stringify(old)
+    window.localStorage.setItem('kukucchi-save-v1', raw)
+    const repository = createLocalStorageSaveRepository(window.localStorage)
+    const migrated = repository.load()
+    repository.save(migrated)
+    expect(window.localStorage.getItem(PRE_MIGRATION_BACKUP_KEY)).toBe(raw)
+    repository.save(migrated)
+    expect(window.localStorage.getItem(PRE_MIGRATION_BACKUP_KEY)).toBe(raw)
+  })
+
+  it('preserves malformed data without preventing a fresh save', () => {
+    window.localStorage.clear()
+    window.localStorage.setItem('kukucchi-save-v1', '{broken')
+    const repository = createLocalStorageSaveRepository(window.localStorage)
+    repository.save(createDefaultSaveData())
+    expect(window.localStorage.getItem(PRE_MIGRATION_BACKUP_KEY)).toBe('{broken')
+    expect(repository.load().version).toBe(15)
   })
 })

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import { useSaveData } from '../../hooks/useSaveData'
 
 type SparkStar = {
   id: number
@@ -42,27 +43,37 @@ function createShootingStar(id: number): ShootingStar {
 }
 
 export function SpaceBackgroundEffects() {
+  const { saveData } = useSaveData()
+  const reduceMotion = saveData.settings.reduceMotion
   const [sparkStars, setSparkStars] = useState<SparkStar[]>(() => createSparkStars(Date.now()))
   const [shootingStar, setShootingStar] = useState<ShootingStar | null>(null)
 
   useEffect(() => {
+    if (reduceMotion) return undefined
     const interval = window.setInterval(() => {
       setSparkStars(createSparkStars(Date.now()))
     }, 3000)
     return () => window.clearInterval(interval)
-  }, [])
+  }, [reduceMotion])
 
   useEffect(() => {
+    if (reduceMotion) return undefined
     let timeoutId: number
     let clearStarTimeoutId: number
 
     function scheduleNextStar() {
-      timeoutId = window.setTimeout(() => {
-        const star = createShootingStar(Date.now())
-        setShootingStar(star)
-        clearStarTimeoutId = window.setTimeout(() => setShootingStar(null), star.duration * 1000 + 160)
-        scheduleNextStar()
-      }, randomBetween(2600, 6800))
+      timeoutId = window.setTimeout(
+        () => {
+          const star = createShootingStar(Date.now())
+          setShootingStar(star)
+          clearStarTimeoutId = window.setTimeout(
+            () => setShootingStar(null),
+            star.duration * 1000 + 160,
+          )
+          scheduleNextStar()
+        },
+        randomBetween(2600, 6800),
+      )
     }
 
     scheduleNextStar()
@@ -70,7 +81,9 @@ export function SpaceBackgroundEffects() {
       window.clearTimeout(timeoutId)
       window.clearTimeout(clearStarTimeoutId)
     }
-  }, [])
+  }, [reduceMotion])
+
+  if (reduceMotion) return null
 
   return (
     <div className="space-effects" aria-hidden="true">
@@ -91,12 +104,14 @@ export function SpaceBackgroundEffects() {
         <span
           className="shooting-star"
           key={shootingStar.id}
-          style={{
-            '--shoot-distance': `${shootingStar.distance}px`,
-            animationDuration: `${shootingStar.duration}s`,
-            left: `${shootingStar.left}%`,
-            top: `${shootingStar.top}%`,
-          } as CSSProperties}
+          style={
+            {
+              '--shoot-distance': `${shootingStar.distance}px`,
+              animationDuration: `${shootingStar.duration}s`,
+              left: `${shootingStar.left}%`,
+              top: `${shootingStar.top}%`,
+            } as CSSProperties
+          }
         />
       ) : null}
     </div>

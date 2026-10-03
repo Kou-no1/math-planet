@@ -5,7 +5,13 @@ import { AdditionBossSprite } from '../../components/collection/AdditionBossSpri
 import { DivisionBossSprite } from '../../components/collection/DivisionBossSprite'
 import { SubtractionBossSprite } from '../../components/collection/SubtractionBossSprite'
 import { bosses } from '../../data/bosses'
-import { additionAreas, divisionAreas, getPlanetById, subtractionAreas, type PlanetId } from '../../data/planets'
+import {
+  additionAreas,
+  divisionAreas,
+  getPlanetById,
+  subtractionAreas,
+  type PlanetId,
+} from '../../data/planets'
 import {
   getClearedStars,
   isBossUnlocked,
@@ -13,6 +19,9 @@ import {
 } from '../../game-engine/bosses/bossEngine'
 import { useSaveData } from '../../hooks/useSaveData'
 import { PlayerCommandPanel, WeakFactsPanel } from '../home/HomePanels'
+import { planetExpeditions } from '../../data/planetExpeditions'
+import { expeditionProgress } from '../../game-engine/learning/expeditions'
+import { getPlanetLearningTarget } from '../../game-engine/learning/planetLearning'
 
 type PlanetMode = {
   label: string
@@ -253,6 +262,10 @@ export function PlanetMenuPage() {
   const subtractionBosses = bosses.filter((boss) => boss.group === 'subtraction')
   const divisionBosses = bosses.filter((boss) => boss.group === 'division')
   const lowGradePlanet = planet.id === 'add' || planet.id === 'subtract'
+  const expedition = planetExpeditions[planet.id]
+  const milestones = expeditionProgress(saveData, planet.id)
+  const completedMilestones = milestones.filter((milestone) => milestone.completed).length
+  const learningTarget = getPlanetLearningTarget(saveData, planet.id)
 
   return (
     <AppShell title={planet.shortName} backTo="/home" className="planet-menu-shell">
@@ -276,7 +289,42 @@ export function PlanetMenuPage() {
 
       {planet.status === 'live' ? (
         <>
-          <PlayerCommandPanel className="planet-command-panel" />
+          <PlayerCommandPanel className="planet-command-panel" planet={planet.id} />
+
+          <section className="planet-expedition" style={style} aria-labelledby="expedition-title">
+            <div className="expedition-heading">
+              <div>
+                <p className="welcome">ほしのおてつだい</p>
+                <h2 id="expedition-title">{expedition.place}</h2>
+              </div>
+              <strong>
+                {completedMilestones}/{milestones.length}
+              </strong>
+            </div>
+            <p>
+              {completedMilestones === milestones.length ? expedition.complete : expedition.request}
+            </p>
+            <ol className="expedition-milestones" aria-label={`${expedition.milestone}のようす`}>
+              {milestones.map((milestone, index) => (
+                <li key={milestone.id} className={milestone.completed ? 'completed' : ''}>
+                  <span aria-hidden="true">{milestone.completed ? '✓' : String(index + 1)}</span>
+                  <span>{milestone.label}</span>
+                  <small>
+                    {Math.min(milestone.correct, milestone.target)}/{milestone.target}
+                  </small>
+                </li>
+              ))}
+            </ol>
+            <div className="expedition-actions">
+              <Link className="primary-action" to={learningTarget.href}>
+                つぎのいっぽ
+              </Link>
+              <Link className="secondary-action" to={`/review?planet=${planet.id}`}>
+                ふくしゅう
+              </Link>
+              <span>{learningTarget.label}</span>
+            </div>
+          </section>
 
           <section className="mode-grid planet-mode-grid" aria-label={`${planet.name}のメニュー`}>
             {modes.map(modeCard)}
@@ -304,7 +352,10 @@ export function PlanetMenuPage() {
                   ))}
                 </div>
               </section>
-              <section className="planet-area-list addition-boss-list" aria-labelledby="addition-boss-menu-title">
+              <section
+                className="planet-area-list addition-boss-list"
+                aria-labelledby="addition-boss-menu-title"
+              >
                 <div className="section-heading-row">
                   <div>
                     <p className="welcome">B2</p>
@@ -317,7 +368,11 @@ export function PlanetMenuPage() {
                     const remaining = remainingQuestionsToUnlockBoss(boss, saveData)
                     return (
                       <Link
-                        className={unlocked ? 'stage-chip addition-area-chip' : 'stage-chip addition-area-chip locked'}
+                        className={
+                          unlocked
+                            ? 'stage-chip addition-area-chip'
+                            : 'stage-chip addition-area-chip locked'
+                        }
                         key={boss.id}
                         to={`/boss/${boss.id}`}
                       >
@@ -362,7 +417,10 @@ export function PlanetMenuPage() {
                   ))}
                 </div>
               </section>
-              <section className="planet-area-list addition-boss-list" aria-labelledby="subtraction-boss-menu-title">
+              <section
+                className="planet-area-list addition-boss-list"
+                aria-labelledby="subtraction-boss-menu-title"
+              >
                 <div className="section-heading-row">
                   <div>
                     <p className="welcome">B3</p>
@@ -375,7 +433,11 @@ export function PlanetMenuPage() {
                     const remaining = remainingQuestionsToUnlockBoss(boss, saveData)
                     return (
                       <Link
-                        className={unlocked ? 'stage-chip addition-area-chip' : 'stage-chip addition-area-chip locked'}
+                        className={
+                          unlocked
+                            ? 'stage-chip addition-area-chip'
+                            : 'stage-chip addition-area-chip locked'
+                        }
                         key={boss.id}
                         to={`/boss/${boss.id}`}
                       >
@@ -420,7 +482,10 @@ export function PlanetMenuPage() {
                   ))}
                 </div>
               </section>
-              <section className="planet-area-list addition-boss-list" aria-labelledby="division-boss-menu-title">
+              <section
+                className="planet-area-list addition-boss-list"
+                aria-labelledby="division-boss-menu-title"
+              >
                 <div className="section-heading-row">
                   <div>
                     <p className="welcome">B4</p>
@@ -433,7 +498,11 @@ export function PlanetMenuPage() {
                     const remaining = remainingQuestionsToUnlockBoss(boss, saveData)
                     return (
                       <Link
-                        className={unlocked ? 'stage-chip addition-area-chip' : 'stage-chip addition-area-chip locked'}
+                        className={
+                          unlocked
+                            ? 'stage-chip addition-area-chip'
+                            : 'stage-chip addition-area-chip locked'
+                        }
                         key={boss.id}
                         to={`/boss/${boss.id}`}
                       >
@@ -456,7 +525,7 @@ export function PlanetMenuPage() {
             </>
           ) : null}
 
-          <WeakFactsPanel className="planet-weak-panel" />
+          <WeakFactsPanel className="planet-weak-panel" planet={planet.id} />
         </>
       ) : (
         <section className="mode-grid planet-mode-grid" aria-label={`${planet.name}のメニュー`}>

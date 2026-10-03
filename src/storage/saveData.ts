@@ -16,8 +16,9 @@ import { isMultiplicationFactProgress } from '../game-engine/questions/factIds'
 import { DEFAULT_DAILY_BUDGET_MINUTES } from '../game-engine/school/dailyUsage'
 import { DEFAULT_SCHOOL_MODE_2_ENABLED } from '../game-engine/school/schoolMode2'
 import { titleRecordId } from '../game-engine/rewards/titles'
+import { isMonsterOvercome } from '../game-engine/review/weakFacts'
 
-export const SAVE_DATA_VERSION = 14
+export const SAVE_DATA_VERSION = 15
 const LEGACY_ADVANCED_BOSS_RESET_VERSION = 10
 const ADDITION_ROCKET_TITLE_MIGRATION_VERSION = 14
 const additionRocketTitleMigrationEntries = [
@@ -25,9 +26,7 @@ const additionRocketTitleMigrationEntries = [
   ['ろけっとぱいろっと', 'たしざんロケットパイロット'],
   ['ろけっときゃぷてん', 'たしざんロケットキャプテン'],
 ] as const
-const additionRocketTitleMigrationMap = new Map<string, string>(
-  additionRocketTitleMigrationEntries,
-)
+const additionRocketTitleMigrationMap = new Map<string, string>(additionRocketTitleMigrationEntries)
 
 const legacyAdvancedBossIds = ['boss-square', 'boss-pi'] as const
 const legacyAdvancedBossIdSet = new Set<string>(legacyAdvancedBossIds)
@@ -51,9 +50,10 @@ const legacyAdvancedCollectionRecordIds = new Set<string>([
   ...legacyAdvancedBossIds.map((bossId) => collectionRecordId('ufo', `${bossId}-ufo`)),
   collectionRecordId('ufo', specialUfoId),
   ...Array.from(legacyAdvancedBossItemIds).map((itemId) => collectionRecordId('boss-item', itemId)),
-  ...Array.from(legacyAdvancedBossTitles).map((title) =>
+  ...Array.from(legacyAdvancedBossTitles).flatMap((title) => [
+    collectionRecordId('title', title),
     collectionRecordId('title', titleRecordId(title)),
-  ),
+  ]),
 ])
 
 function shouldRemoveTimeOnlyMonsterFact(fact: MultiplicationFactProgress): boolean {
@@ -76,9 +76,7 @@ function cleanTimeOnlyMonsterFacts(
 }
 
 function defaultTreasureKeys(): SaveData['progress']['treasureKeys'] {
-  return Object.fromEntries(
-    keyTypes.map((key) => [key.id, { count: 0, firstAcquiredAt: null }]),
-  )
+  return Object.fromEntries(keyTypes.map((key) => [key.id, { count: 0, firstAcquiredAt: null }]))
 }
 
 function normalizeTreasureKeys(
@@ -190,7 +188,7 @@ function resetLegacyAdvancedBossPlayer(player: SaveData['player']): SaveData['pl
     ...player,
     titles,
     currentTitle: legacyAdvancedBossTitles.has(player.currentTitle)
-      ? titles.at(-1) ?? 'はじめのいっぽ'
+      ? (titles.at(-1) ?? 'はじめのいっぽ')
       : player.currentTitle,
   }
 }
@@ -208,7 +206,7 @@ function resetLegacyAdvancedBossProgress(progress: ProgressData): ProgressData {
     ownedUfos,
     equippedUfoId:
       progress.equippedUfoId && legacyAdvancedUfoIds.has(progress.equippedUfoId)
-        ? ownedUfos[0] ?? null
+        ? (ownedUfos[0] ?? null)
         : progress.equippedUfoId,
     collectionRecords: progress.collectionRecords.filter(
       (record) => !legacyAdvancedCollectionRecordIds.has(record.id),
@@ -240,6 +238,8 @@ export function createDefaultSaveData(): SaveData {
       reduceMotion: false,
       dailyBudgetMinutes: DEFAULT_DAILY_BUDGET_MINUTES,
       schoolMode2Enabled: DEFAULT_SCHOOL_MODE_2_ENABLED,
+      practiceQuestionCount: 9,
+      practiceAnswerMode: 'choice',
     },
     progress: {
       facts: {},
@@ -275,7 +275,7 @@ export function createDefaultSaveData(): SaveData {
 
 export function createPlayerFromOnboarding(input: OnboardingInput): SaveData {
   const now = new Date().toISOString()
-  const firstTitle = 'はじめのいっぽ'
+  const firstTitle = titleRecordId('はじめのいっぽ')
   const defaults = createDefaultSaveData()
   return {
     ...defaults,
@@ -299,6 +299,8 @@ export function createPlayerFromOnboarding(input: OnboardingInput): SaveData {
       reduceMotion: false,
       dailyBudgetMinutes: DEFAULT_DAILY_BUDGET_MINUTES,
       schoolMode2Enabled: DEFAULT_SCHOOL_MODE_2_ENABLED,
+      practiceQuestionCount: 9,
+      practiceAnswerMode: 'choice',
     },
     progress: {
       ...defaults.progress,
@@ -313,7 +315,7 @@ export function createPlayerFromOnboarding(input: OnboardingInput): SaveData {
   }
 }
 
-export function migrateSaveData(raw: unknown): SaveData {
+function normalizeLegacySaveData(raw: unknown): SaveData {
   if (!raw || typeof raw !== 'object') {
     return createDefaultSaveData()
   }
@@ -428,6 +430,85 @@ export function migrateSaveData(raw: unknown): SaveData {
     tutorial: {
       ...defaults.tutorial,
       ...candidate.tutorial,
+    },
+  }
+}
+
+export function migrateSaveData(raw: unknown): SaveData {
+  const save = normalizeLegacySaveData(raw)
+  const oldVersion = raw && typeof raw === 'object' ? ((raw as Partial<SaveData>).version ?? 0) : 0
+  const sharedTitle = 'おおきいかずこまんだー'
+  const subtractionTitle = titleRecordId('おおひきこまんだー')
+  const subtractionCleared =
+    save.progress.bossProgress['boss-sub-three-digit']?.difficulties.normal?.cleared === true
+  const additionCleared =
+    save.progress.bossProgress['boss-add-three-digit']?.difficulties.normal?.cleared === true
+  const titleIds = (title: string): string[] => {
+    if (oldVersion < 15 && title === sharedTitle && subtractionCleared) {
+      return additionCleared ? [titleRecordId(sharedTitle), subtractionTitle] : [subtractionTitle]
+    }
+    return [titleRecordId(title)]
+  }
+  const facts = Object.fromEntries(
+    Object.entries(save.progress.facts).map(([id, fact]) => {
+      const wrong = fact.recentResults.filter((result) => !result.correct).at(-1)
+      const knownOvercome =
+        isMonsterOvercome(fact) ||
+        (fact.incorrectCount > 0 && save.progress.monsterBook.includes(id))
+      return [
+        id,
+        {
+          ...fact,
+          firstIncorrectAt:
+            fact.firstIncorrectAt ??
+            wrong?.answeredAt ??
+            (fact.incorrectCount > 0 ? fact.lastAnsweredAt : null),
+          overcomeAt: fact.overcomeAt ?? (knownOvercome ? fact.lastAnsweredAt : null),
+        },
+      ]
+    }),
+  )
+  const records = new Map<string, CollectionRecord>()
+  for (const record of save.progress.collectionRecords) {
+    const ids = record.id.startsWith('title:')
+      ? titleIds(record.id.slice('title:'.length)).map((id) => collectionRecordId('title', id))
+      : [record.id]
+    for (const id of ids) {
+      const existing = records.get(id)
+      if (!existing || record.acquiredAt < existing.acquiredAt) records.set(id, { ...record, id })
+    }
+  }
+  return {
+    ...save,
+    version: SAVE_DATA_VERSION,
+    player: save.player
+      ? {
+          ...save.player,
+          titles: Array.from(new Set(save.player.titles.flatMap(titleIds))),
+          currentTitle: titleIds(save.player.currentTitle)[0],
+        }
+      : null,
+    settings: {
+      ...save.settings,
+      practiceQuestionCount: [5, 9, 15].includes(save.settings.practiceQuestionCount)
+        ? save.settings.practiceQuestionCount
+        : 9,
+      practiceAnswerMode: save.settings.practiceAnswerMode === 'input' ? 'input' : 'choice',
+    },
+    progress: {
+      ...save.progress,
+      facts,
+      collectionRecords: [...records.values()],
+      history: save.progress.history.map((entry) => ({
+        ...entry,
+        planet: entry.planet ?? 'legacy',
+      })),
+      bests: Object.fromEntries(
+        Object.entries(save.progress.bests).map(([key, value]) => [
+          key.startsWith('[') || key.startsWith('legacy:') ? key : `legacy:${key}`,
+          value,
+        ]),
+      ),
     },
   }
 }

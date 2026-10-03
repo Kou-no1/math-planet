@@ -1,17 +1,13 @@
-import { useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
 import { MonsterSprite } from '../../components/collection/MonsterSprite'
 import { AnswerControls } from '../../components/game/AnswerControls'
 import { GameFeedback } from '../../components/game/GameFeedback'
 import { isCorrectAnswer } from '../../game-engine/questions/answer'
-import {
-  generateAdaptiveMultiplicationQuestion,
-  generateMultiplicationFactQuestion,
-} from '../../game-engine/questions/questionGenerator'
 import { formatFactLabel } from '../../game-engine/questions/factIds'
 import {
-  getMonsterFacts,
+  getWeakFacts,
   getMonsterOvercomeProgress,
   getReviewQueue,
 } from '../../game-engine/review/weakFacts'
@@ -23,31 +19,48 @@ import { useSaveData } from '../../hooks/useSaveData'
 import { playCorrectSound } from '../../services/audioService'
 import { applySessionResult } from '../../services/resultService'
 import type { AnswerResult, AnswerValue, Question, ScoreState } from '../../types/game'
+import { CalculationHint } from '../../components/game/CalculationHint'
 import { createId } from '../../utils/id'
+import { createPlanetReviewQuestion } from '../../game-engine/review/planetReview'
+import { factsWithResults } from '../../game-engine/mastery/mastery'
+import { planetOperations } from '../../game-engine/learning/planetLearning'
+import type { PlanetId } from '../../data/planets'
 
 const reviewGoal = 6
 
 export function ReviewPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const requestedPlanet = searchParams.get('planet')
+  const planet: PlanetId =
+    requestedPlanet === 'add' || requestedPlanet === 'subtract' || requestedPlanet === 'divide'
+      ? requestedPlanet
+      : 'multiply'
+  const operation = planetOperations[planet]
   const { saveData, setSaveData } = useSaveData()
   const { rewardBudgetReached } = useDailyUsage()
   const reviewQueue = useMemo(
-    () => getReviewQueue(saveData.progress.facts, new Date(), reviewGoal, { operation: 'multiplication' }),
-    [saveData.progress.facts],
+    () =>
+      getReviewQueue(saveData.progress.facts, new Date(), reviewGoal, {
+        operation,
+      }),
+    [saveData.progress.facts, operation],
   )
   const monsters = useMemo(
-    () => getMonsterFacts(saveData.progress.facts, 6),
-    [saveData.progress.facts],
+    () => getWeakFacts(saveData.progress.facts, 6, { operation }),
+    [saveData.progress.facts, operation],
   )
   const [started, setStarted] = useState(false)
-  const [question, setQuestion] = useState<Question>(() =>
-    saveData.settings.schoolMode2Enabled
-      ? generateAdaptiveMultiplicationQuestion(saveData.progress.facts, {
-          schoolMode2Enabled: true,
-        })
-      : reviewQueue[0]
-        ? generateMultiplicationFactQuestion(reviewQueue[0].left, reviewQueue[0].right)
-        : generateAdaptiveMultiplicationQuestion(saveData.progress.facts),
+  const [hintUsed, setHintUsed] = useState(false)
+  const [question, setQuestion] = useState(() =>
+    createPlanetReviewQuestion({
+      planet,
+      facts: saveData.progress.facts,
+      queue: reviewQueue,
+      index: 0,
+      schoolMode2Enabled: saveData.settings.schoolMode2Enabled,
+      recentIncorrectCount: 0,
+    }),
   )
   const [feedback, setFeedback] = useState<'idle' | 'correct' | 'incorrect'>('idle')
   const [results, setResults] = useState<AnswerResult[]>([])
@@ -57,19 +70,23 @@ export function ReviewPage() {
     maxCombo: 0,
   })
   const startedAtRef = useRef(Date.now())
+  const timeoutRef = useRef<number | null>(null)
+  useEffect(
+    () => () => {
+      if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current)
+    },
+    [],
+  )
 
   function createReviewQuestion(index: number, completedResults = results): Question {
-    if (saveData.settings.schoolMode2Enabled) {
-      return generateAdaptiveMultiplicationQuestion(saveData.progress.facts, {
-        schoolMode2Enabled: true,
-        recentIncorrectCount: resultIncorrectStreak(completedResults),
-      })
-    }
-    const fact = reviewQueue[index % Math.max(1, reviewQueue.length)]
-    if (fact) {
-      return generateMultiplicationFactQuestion(fact.left, fact.right)
-    }
-    return generateAdaptiveMultiplicationQuestion(saveData.progress.facts)
+    return createPlanetReviewQuestion({
+      planet,
+      facts: factsWithResults(saveData.progress.facts, completedResults),
+      queue: reviewQueue,
+      index,
+      schoolMode2Enabled: saveData.settings.schoolMode2Enabled,
+      recentIncorrectCount: resultIncorrectStreak(completedResults),
+    })
   }
 
   function startReview() {
@@ -77,6 +94,7 @@ export function ReviewPage() {
     setResults([])
     setScoreState({ score: 0, combo: 0, maxCombo: 0 })
     setFeedback('idle')
+    setHintUsed(false)
     setQuestion(createReviewQuestion(0))
     startedAtRef.current = Date.now()
   }
@@ -89,6 +107,7 @@ export function ReviewPage() {
       score: nextScoreState.score,
       results: nextResults,
       finishedAt: new Date().toISOString(),
+      details: { planet, answerMode: 'choice', questionCount: reviewGoal },
     })
     const applied = applySessionResult(saveData, rawSummary, {
       rewardBudgetPaused: rewardBudgetReached,
@@ -110,6 +129,7 @@ export function ReviewPage() {
       givenAnswer: answer,
       correct,
       difficulty: question.difficulty,
+      hintUsed,
       responseTimeMs,
       answeredAt: new Date().toISOString(),
     }
@@ -121,25 +141,32 @@ export function ReviewPage() {
     if (correct) {
       playCorrectSound(saveData.settings.soundEnabled)
     }
-    window.setTimeout(() => {
+    timeoutRef.current = window.setTimeout(() => {
       if (nextResults.length >= reviewGoal) {
         finish(nextResults, nextScoreState)
       } else {
         setQuestion(createReviewQuestion(nextResults.length, nextResults))
         setFeedback('idle')
+        setHintUsed(false)
         startedAtRef.current = Date.now()
       }
     }, 700)
   }
 
   return (
-    <AppShell title="にがてモンスター" backTo="/planet/multiply" className={started ? 'game-shell' : ''}>
+    <AppShell
+      title={planet === 'multiply' ? 'にがてモンスター' : 'ふくしゅう'}
+      backTo={`/planet/${planet}`}
+      className={started ? 'game-shell' : ''}
+    >
       {!started ? (
         <section className="review-start" aria-labelledby="review-title">
-          <p className="welcome">苦手はたからもの</p>
-          <h2 id="review-title">モンスターをなかまにしよう</h2>
+          <p className="welcome">もういちど やってみよう</p>
+          <h2 id="review-title">
+            {planet === 'multiply' ? 'モンスターをなかまにしよう' : 'できるを ふやそう'}
+          </h2>
           <p className="title-line">
-            最近まちがえた式、復習の日が来た式、ゆっくりだった式から出題します。
+            まちがえたもんだいと、ふくしゅうのひがきたもんだいを とこう。
           </p>
           <div className="monster-grid" aria-label="出現中のモンスター">
             {(monsters.length > 0 ? monsters : reviewQueue).slice(0, 6).map((fact) => {
@@ -150,7 +177,17 @@ export function ReviewPage() {
                 : null
               return (
                 <span className="monster-chip" key={fact.id}>
-                  <MonsterSprite left={fact.left} right={fact.right} className="monster-chip-sprite" />
+                  {planet === 'multiply' ? (
+                    <MonsterSprite
+                      left={fact.left}
+                      right={fact.right}
+                      className="monster-chip-sprite"
+                    />
+                  ) : (
+                    <span className="review-operation-symbol" aria-hidden="true">
+                      {planet === 'add' ? '+' : planet === 'subtract' ? '-' : '÷'}
+                    </span>
+                  )}
                   <span>
                     {formatFactLabel(fact)}
                     <small>Lv {fact.masteryLevel}</small>
@@ -166,13 +203,13 @@ export function ReviewPage() {
             })}
             {monsters.length === 0 && reviewQueue.length === 0 ? (
               <span className="monster-chip">
-                🌟 まだ平和
-                <small>まずは遊ぼう</small>
+                まだありません
+                <small>まずは おぼえるで といてみよう</small>
               </span>
             ) : null}
           </div>
           <button className="primary-action wide" type="button" onClick={startReview}>
-            復習スタート
+            {planet === 'multiply' ? '復習スタート' : 'ふくしゅうすたーと'}
           </button>
         </section>
       ) : (
@@ -181,7 +218,12 @@ export function ReviewPage() {
             <span>
               {results.length}/{reviewGoal}
             </span>
-            <span>{scoreState.combo} コンボ</span>
+            <span>{scoreState.combo} れんぞく</span>
+            <CalculationHint
+              key={question.id + results.length}
+              question={question}
+              onOpen={() => setHintUsed(true)}
+            />
           </div>
           <h2 id="review-question" className="question-prompt">
             {question.prompt}

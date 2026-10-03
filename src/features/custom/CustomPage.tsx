@@ -109,7 +109,7 @@ function EntryIcon({ entry }: { entry: CustomInventoryEntry }) {
   }
   return (
     <span className={locked ? 'custom-item-emoji locked' : 'custom-item-emoji'} aria-hidden="true">
-      {locked ? '◆' : entry.item?.emoji ?? '◇'}
+      {locked ? '◆' : (entry.item?.emoji ?? '◇')}
     </span>
   )
 }
@@ -142,7 +142,7 @@ export function CustomPage() {
   const activeTab =
     requestedTab && requestedTab.totalCount > 0
       ? requestedTab
-      : inventory.find((tab) => tab.totalCount > 0) ?? requestedTab ?? inventory[0]
+      : (inventory.find((tab) => tab.totalCount > 0) ?? requestedTab ?? inventory[0])
 
   const equippedUfo = getUfoById(saveData.progress.equippedUfoId)
   const visual = getHomeShipPreviewVisuals(saveData.progress.equippedItems, equippedUfo?.variant)
@@ -195,7 +195,7 @@ export function CustomPage() {
           player: current.player
             ? {
                 ...current.player,
-                currentTitle: entry.label,
+                currentTitle: entry.id,
               }
             : current.player,
         }

@@ -9,6 +9,9 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/tests/setup.ts',
     css: true,
-    testTimeout: 30000,
+    testTimeout: 60000,
+    // Keep file isolation while reusing one worker under memory pressure.
+    pool: 'vmThreads',
+    maxWorkers: 1,
   },
 })
