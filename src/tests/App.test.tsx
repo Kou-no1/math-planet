@@ -32,8 +32,14 @@ describe('app flow', () => {
 
   it('moves from onboarding to home and saves settings', async () => {
     const user = await completeOnboarding()
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(
+      '© 2026 まなびたね All rights reserved.',
+    )
     await user.click(screen.getAllByRole('link', { name: 'せってい' })[0])
     expect(await screen.findByRole('heading', { name: 'せってい' })).toBeInTheDocument()
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(
+      '© 2026 まなびたね All rights reserved.',
+    )
     const sound = screen.getByLabelText('効果音')
     await user.click(sound)
     expect(sound).not.toBeChecked()

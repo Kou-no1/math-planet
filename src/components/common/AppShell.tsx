@@ -59,7 +59,7 @@ export function AppShell({
       <main>{children}</main>
       <footer className="site-footer">
         <p>「あったらいいのに」を、作ってる。</p>
-        <p>© 2026 野村晃一 All rights reserved.</p>
+        <p>© 2026 まなびたね All rights reserved.</p>
       </footer>
     </div>
   )
