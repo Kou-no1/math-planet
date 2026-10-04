@@ -4,6 +4,8 @@ import { ScrollToTop } from './components/common/ScrollToTop'
 import { SpaceBackgroundEffects } from './components/common/SpaceBackgroundEffects'
 import { DailyUsageProvider } from './hooks/useDailyUsage'
 import { SaveDataProvider } from './hooks/useSaveData'
+import { SaveProtectionNotice } from './components/common/SaveProtectionNotice'
+import { RouteErrorBoundary } from './components/common/RouteErrorBoundary'
 
 export default function App() {
   return (
@@ -12,7 +14,8 @@ export default function App() {
         <DailyUsageProvider>
           <ScrollToTop />
           <SpaceBackgroundEffects />
-          <AppRoutes />
+          <SaveProtectionNotice />
+          <RouteErrorBoundary><AppRoutes /></RouteErrorBoundary>
         </DailyUsageProvider>
       </SaveDataProvider>
     </HashRouter>

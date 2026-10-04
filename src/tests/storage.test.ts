@@ -62,12 +62,14 @@ describe('save repository', () => {
     expect(window.localStorage.getItem(PRE_MIGRATION_BACKUP_KEY)).toBe(raw)
   })
 
-  it('preserves malformed data without preventing a fresh save', () => {
+  it('blocks automatic writes over malformed original data', () => {
     window.localStorage.clear()
     window.localStorage.setItem('kukucchi-save-v1', '{broken')
     const repository = createLocalStorageSaveRepository(window.localStorage)
-    repository.save(createDefaultSaveData())
-    expect(window.localStorage.getItem(PRE_MIGRATION_BACKUP_KEY)).toBe('{broken')
+    expect(repository.loadState().original).toBe('{broken')
+    expect(repository.loadState().error).toBeTruthy()
+    expect(() => repository.save(createDefaultSaveData())).toThrow()
+    expect(window.localStorage.getItem('kukucchi-save-v1')).toBe('{broken')
     expect(repository.load().version).toBe(15)
   })
 })

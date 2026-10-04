@@ -6,6 +6,7 @@ import { TutorialModal } from '../../components/common/TutorialModal'
 import { planets } from '../../data/planets'
 import { useSaveData } from '../../hooks/useSaveData'
 import { HomePlayerStrip } from './HomePanels'
+import { PwaHomePanel } from '../../pwa/PwaPanel'
 
 function planetSymbol(planetId: string) {
   if (planetId === 'decimal') return '0.1'
@@ -131,6 +132,7 @@ export function HomePage() {
         </Link>
       </section>
 
+      <PwaHomePanel safe={!tutorialOpen} />
       {tutorialOpen ? <TutorialModal onClose={closeTutorial} /> : null}
     </AppShell>
   )

@@ -57,13 +57,9 @@ export function formatNameCooldownMessage(
 }
 
 export function readNameCooldownState(storage?: NameCooldownStorage): NameCooldownState {
-  const targetStorage =
-    storage ??
-    (typeof window !== 'undefined' ? window.localStorage : undefined)
-  if (!targetStorage) {
-    return {}
-  }
   try {
+    const targetStorage = storage ?? (typeof window !== 'undefined' ? window.localStorage : undefined)
+    if (!targetStorage) return {}
     const parsed = JSON.parse(
       targetStorage.getItem(NAME_CHANGE_COOLDOWN_STORAGE_KEY) ?? '{}',
     ) as NameCooldownState
@@ -80,11 +76,8 @@ export function writeNameCooldownState(
   state: NameCooldownState,
   storage?: NameCooldownStorage,
 ): void {
-  const targetStorage =
-    storage ??
-    (typeof window !== 'undefined' ? window.localStorage : undefined)
-  if (!targetStorage) {
-    return
-  }
-  targetStorage.setItem(NAME_CHANGE_COOLDOWN_STORAGE_KEY, JSON.stringify(state))
+  try {
+    const targetStorage = storage ?? (typeof window !== 'undefined' ? window.localStorage : undefined)
+    targetStorage?.setItem(NAME_CHANGE_COOLDOWN_STORAGE_KEY, JSON.stringify(state))
+  } catch { /* The in-memory cooldown still applies for this session. */ }
 }

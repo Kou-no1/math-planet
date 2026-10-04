@@ -12,15 +12,14 @@ export type DailyUsageRepository = {
 }
 
 export function createLocalStorageDailyUsageRepository(
-  storage: Storage = window.localStorage,
+  storage?: Storage,
 ): DailyUsageRepository {
+  const target = () => storage ?? window.localStorage
   return {
     load: () => {
-      const raw = storage.getItem(DAILY_USAGE_STORAGE_KEY)
-      if (!raw) {
-        return createDailyUsageState()
-      }
       try {
+        const raw = target().getItem(DAILY_USAGE_STORAGE_KEY)
+        if (!raw) return createDailyUsageState()
         return normalizeDailyUsageState(JSON.parse(raw))
       } catch (error) {
         console.error('日次使用時間の読み込みに失敗しました', error)
@@ -28,10 +27,11 @@ export function createLocalStorageDailyUsageRepository(
       }
     },
     save: (state) => {
-      storage.setItem(DAILY_USAGE_STORAGE_KEY, JSON.stringify(state))
+      try { target().setItem(DAILY_USAGE_STORAGE_KEY, JSON.stringify(state)) }
+      catch { /* Keep the current session's budget active when persistence is unavailable. */ }
     },
     clear: () => {
-      storage.removeItem(DAILY_USAGE_STORAGE_KEY)
+      try { target().removeItem(DAILY_USAGE_STORAGE_KEY) } catch { /* No storage permission. */ }
     },
   }
 }

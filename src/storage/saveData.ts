@@ -514,5 +514,64 @@ export function migrateSaveData(raw: unknown): SaveData {
 }
 
 export function parseSaveData(text: string): SaveData {
-  return migrateSaveData(JSON.parse(text))
+  const raw: unknown = JSON.parse(text)
+  const object = (value: unknown): value is Record<string, unknown> =>
+    value !== null && typeof value === 'object' && !Array.isArray(value)
+  const invalid = () => { throw new Error('セーブデータの形式が正しくありません') }
+  if (!object(raw) || !Number.isInteger(raw.version) || Number(raw.version) < 1) invalid()
+  const candidate = raw as Record<string, unknown>
+  if (Number(candidate.version) > SAVE_DATA_VERSION) {
+    throw new Error('新しいバージョンの記録です。元のデータを保護しています。')
+  }
+  if (!object(candidate.progress) || !object(candidate.settings) ||
+      !(candidate.player === null || object(candidate.player))) invalid()
+
+  // Check supplied legacy fields before normalization can silently discard them.
+  function checkShape(value: unknown, sample: unknown) {
+    if (Array.isArray(sample)) {
+      if (!Array.isArray(value)) invalid()
+    } else if (object(sample)) {
+      if (!object(value)) invalid()
+      for (const [key, expected] of Object.entries(sample)) {
+        if (key in (value as Record<string, unknown>)) checkShape((value as Record<string, unknown>)[key], expected)
+      }
+    } else if (sample !== null && typeof value !== typeof sample) invalid()
+    else if (typeof value === 'number' && (!Number.isFinite(value) || value < 0)) invalid()
+  }
+  checkShape(candidate, createDefaultSaveData())
+  if (object(candidate.player)) {
+    const player = candidate.player
+    for (const field of ['nickname', 'icon', 'currentTitle', 'createdAt']) {
+      if (typeof player[field] !== 'string') invalid()
+    }
+    for (const field of ['level', 'coins', 'exp']) {
+      if (typeof player[field] !== 'number' || !Number.isFinite(player[field]) || Number(player[field]) < 0) invalid()
+    }
+    if (!Array.isArray(player.titles) || player.titles.some((title) => typeof title !== 'string')) invalid()
+  }
+  const progress = candidate.progress as Record<string, unknown>
+  for (const field of ['monsterBook', 'bossItems', 'ownedUfos', 'ownedItems', 'equippedItems', 'rocketBadges']) {
+    if (field in progress && (!Array.isArray(progress[field]) ||
+        (progress[field] as unknown[]).some((id) => typeof id !== 'string'))) invalid()
+  }
+  for (const field of ['history', 'missions', 'collectionRecords', 'ownedTreasureItems']) {
+    if (field in progress && (!Array.isArray(progress[field]) ||
+        (progress[field] as unknown[]).some((entry) => !object(entry) || typeof entry.id !== 'string'))) invalid()
+  }
+  for (const field of ['facts', 'bests', 'bossProgress', 'treasureKeys']) {
+    if (!(field in progress)) continue
+    if (!object(progress[field])) invalid()
+    for (const entry of Object.values(progress[field] as Record<string, unknown>)) {
+      if (!object(entry)) invalid()
+      if (field === 'facts' && object(entry)) {
+        for (const key of ['correctCount', 'incorrectCount', 'masteryLevel', 'averageResponseTimeMs']) {
+          if (typeof entry[key] !== 'number' || !Number.isFinite(entry[key]) || Number(entry[key]) < 0) invalid()
+        }
+        if ('recentResults' in entry && (!Array.isArray(entry.recentResults) ||
+            entry.recentResults.some((result) => !object(result) || typeof result.correct !== 'boolean'))) invalid()
+      }
+      if (field === 'bossProgress' && object(entry) && !object(entry.difficulties)) invalid()
+    }
+  }
+  return migrateSaveData(candidate)
 }

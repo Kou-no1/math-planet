@@ -1,7 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { useDailyUsage } from '../../hooks/useDailyUsage'
-import { useSaveData } from '../../hooks/useSaveData'
 
 export function AppShell({
   children,
@@ -20,7 +19,6 @@ export function AppShell({
 }) {
   const location = useLocation()
   const { rewardBudgetReached } = useDailyUsage()
-  const { saveError } = useSaveData()
   const showBack = location.pathname !== '/home'
 
   return (
@@ -51,11 +49,6 @@ export function AppShell({
           </Link>
         )}
       </header>
-      {saveError ? (
-        <p className="save-error-notice" role="alert">
-          {saveError}
-        </p>
-      ) : null}
       <main>{children}</main>
       <footer className="site-footer">
         <p>「あったらいいのに」を、作ってる。</p>

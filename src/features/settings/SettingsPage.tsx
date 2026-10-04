@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import type { ChangeEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../../components/common/AppShell'
 import { TutorialModal } from '../../components/common/TutorialModal'
@@ -31,20 +30,20 @@ import {
   type NameChangeTarget,
 } from '../../game-engine/settings/nameCooldown'
 import { useSaveData } from '../../hooks/useSaveData'
-import { SAVE_DATA_VERSION, parseSaveData } from '../../storage/saveData'
+import { SAVE_DATA_VERSION } from '../../storage/saveData'
 import { validateShipName } from '../../utils/bannedWords'
 import { titleLabel } from '../../game-engine/rewards/titles'
 import {
   applyLearningPreset,
   applyQuietPreset,
 } from '../../game-engine/settings/learningPreferences'
-import { readPreMigrationBackup } from '../../repositories/saveRepository'
+import { BackupPanel } from '../../components/common/BackupPanel'
+import { PwaSettingsPanel } from '../../pwa/PwaPanel'
 
 const teacherSettingsCode = '9631'
 
 export function SettingsPage() {
-  const { saveData, setSaveData, updateSaveData, resetSaveData } = useSaveData()
-  const [importText, setImportText] = useState('')
+  const { saveData, updateSaveData, resetSaveData } = useSaveData()
   const [tutorialOpen, setTutorialOpen] = useState(false)
   const [nameCooldown, setNameCooldown] = useState(readNameCooldownState)
   const [shipNameInput, setShipNameInput] = useState(saveData.player?.shipName ?? defaultShipName)
@@ -67,7 +66,6 @@ export function SettingsPage() {
   const [debugMessage, setDebugMessage] = useState('')
   const [debugLevelInput, setDebugLevelInput] = useState(String(saveData.player?.level ?? 1))
   const backupText = useMemo(() => JSON.stringify(saveData, null, 2), [saveData])
-  const preMigrationBackup = readPreMigrationBackup()
   const ownedTitles = saveData.player?.titles.length ? saveData.player.titles : ['はじめのいっぽ']
   const unlockedLevelIcons = getUnlockedLevelIcons(saveData.player?.level ?? 1)
 
@@ -183,46 +181,6 @@ export function SettingsPage() {
           }
         : current.player,
     }))
-  }
-
-  function downloadBackup(text = backupText, suffix = '') {
-    const blob = new Blob([text], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const anchor = document.createElement('a')
-    anchor.href = url
-    anchor.download = `kukucchi-save${suffix}-${new Date().toISOString().slice(0, 10)}.json`
-    anchor.click()
-    URL.revokeObjectURL(url)
-  }
-
-  function restoreFromText(text: string) {
-    if (!text.trim()) {
-      return
-    }
-    if (!window.confirm('データをひきつぎます。今のデータは上書きされます。')) {
-      return
-    }
-    try {
-      const nextSave = parseSaveData(text)
-      setSaveData(nextSave)
-      setShipNameInput(nextSave.player?.shipName ?? defaultShipName)
-      setShipNameMessage(cooldownMessage('ship'))
-      setCharacterNameInput(nextSave.player?.characterName ?? defaultCharacterName)
-      setCharacterNameMessage(cooldownMessage('character'))
-      setImportText('')
-    } catch (error) {
-      console.error('ひきつぎに失敗しました', error)
-      window.alert('データを読みこめませんでした')
-    }
-  }
-
-  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-    restoreFromText(await file.text())
-    event.target.value = ''
   }
 
   function handleVersionTap() {
@@ -550,42 +508,17 @@ export function SettingsPage() {
 
       <section className="settings-section" aria-labelledby="backup-title">
         <h2 id="backup-title">データ</h2>
-        <p className="quiet-text">保護者・先生向け: JSONで保存とひきつぎができます。</p>
-        <button className="secondary-action wide" type="button" onClick={() => downloadBackup()}>
-          データをほぞんする
-        </button>
-        {preMigrationBackup ? (
-          <button
-            className="secondary-action wide"
-            type="button"
-            onClick={() => downloadBackup(preMigrationBackup, '-before-migration')}
-          >
-            いこうまえのデータをほぞんする
-          </button>
-        ) : null}
-        <textarea value={backupText} readOnly aria-label="コピー用セーブデータ" />
-        <label className="file-button">
-          ファイルからひきつぐ
-          <input type="file" accept="application/json,.json" onChange={handleFile} />
-        </label>
-        <textarea
-          value={importText}
-          onChange={(event) => setImportText(event.target.value)}
-          placeholder="ここにデータを貼り付け"
-          aria-label="貼り付け用セーブデータ"
-        />
-        <button
-          className="secondary-action wide"
-          type="button"
-          onClick={() => restoreFromText(importText)}
-        >
-          データをひきつぐ
-        </button>
+        <BackupPanel onRestored={(next) => {
+          setShipNameInput(next.player?.shipName ?? defaultShipName)
+          setCharacterNameInput(next.player?.characterName ?? defaultCharacterName)
+        }} />
       </section>
+
+      <PwaSettingsPanel />
 
       <section className="settings-section version-section" aria-label="バージョン">
         <button className="version-tap-target" type="button" onClick={handleVersionTap}>
-          バージョン 16 / SaveData v{SAVE_DATA_VERSION}
+          バージョン 18 / SaveData v{SAVE_DATA_VERSION}
         </button>
         {debugPasswordOpen && !debugOpen ? (
           <form

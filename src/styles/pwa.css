@@ -1,0 +1,176 @@
+:root {
+  scroll-padding-top: 12px;
+}
+body {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.app-shell {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+.pwa-home-panel {
+  margin: 16px 0 0;
+  padding: 12px 0;
+  border-top: 1px solid #b6cbd6;
+}
+.pwa-home-panel p {
+  margin: 8px 0;
+}
+.pwa-reminder,
+.pwa-update {
+  padding: 12px 0;
+  border-top: 1px solid #b6cbd6;
+}
+.pwa-home-panel button,
+.pwa-install-help button,
+.pwa-install-help a {
+  margin: 4px 6px 4px 0;
+}
+.pwa-settings p,
+.pwa-dialog p,
+.backup-panel p {
+  overflow-wrap: anywhere;
+}
+.pwa-install-help details {
+  margin: 12px 0;
+}
+.pwa-install-help ol {
+  padding-left: 24px;
+}
+.pwa-install-help li {
+  margin: 8px 0;
+}
+.pwa-url {
+  width: 100%;
+  min-width: 0;
+}
+.pwa-dialog {
+  width: min(600px, calc(100% - 24px));
+  max-width: none;
+  max-height: calc(
+    100vh - 32px - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  max-height: calc(
+    100dvh - 32px - env(safe-area-inset-top, 0px) -
+      env(safe-area-inset-bottom, 0px)
+  );
+  margin: auto;
+  padding: 20px;
+  border: 2px solid #5a899e;
+  border-radius: 8px;
+  background: #fff;
+  color: #152d3a;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.pwa-dialog::backdrop {
+  background: rgb(12 27 38 / 65%);
+}
+.save-protection-notice,
+.route-recovery {
+  width: min(1100px, calc(100% - 24px));
+  margin: 12px auto;
+  padding: 12px;
+  background: #fff3d2;
+  color: #473613;
+  border: 2px solid #b6771a;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+.save-protection-notice p {
+  margin: 0 0 8px;
+}
+.backup-panel {
+  min-width: 0;
+}
+.backup-panel textarea {
+  display: block;
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  margin: 12px 0;
+  font-size: 16px;
+}
+.backup-panel .file-button {
+  min-height: 44px;
+}
+.route-recovery h1 {
+  font-size: 24px;
+}
+:where(
+  button,
+  a.primary-action,
+  a.secondary-action,
+  .icon-button,
+  summary,
+  .file-button
+) {
+  min-height: 44px;
+}
+#root
+  :is(
+    .top-help-button,
+    .icon-button,
+    .hint-trigger,
+    .compact-action,
+    .exp-skip-button,
+    .learn-mode-toggle button,
+    .question-header button,
+    .visual-switches button,
+    .mini-toggle,
+    .duration-select-panel button,
+    .learn-answer-mode-panel button,
+    .book-tabs button,
+    .mini-game-panel .secondary-action.wide
+  ) {
+  min-height: 44px;
+}
+#root .icon-button {
+  min-width: 44px;
+}
+summary {
+  padding: 10px 0;
+}
+input,
+textarea,
+select {
+  scroll-margin: 24px;
+}
+@media (max-width: 480px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  .top-bar {
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+  }
+  .pwa-dialog {
+    padding: 14px;
+  }
+  .pwa-home-panel > button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+@media (max-width: 480px), (max-height: 520px) {
+  /* Setup may grow vertically; never squeeze answer-mode controls behind Start. */
+  .mode-ready-shell {
+    height: auto;
+    overflow: visible;
+  }
+  .mode-ready-shell main {
+    overflow: visible;
+  }
+  .mode-ready-shell .mode-start-screen {
+    height: auto;
+    overflow: visible;
+  }
+  .mode-ready-shell .mode-start-options {
+    overflow: visible;
+  }
+  .mode-ready-shell .mode-start-copy {
+    overflow: visible;
+  }
+}
