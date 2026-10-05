@@ -7,6 +7,7 @@ import { replayPath } from '../features/results/ResultPage'
 async function completeOnboarding() {
   const user = userEvent.setup()
   render(<App />)
+  expect(screen.getByRole('heading', { name: 'けいさんのほし' })).toBeInTheDocument()
   await user.type(screen.getByLabelText('よびな'), 'みらい')
   await user.click(screen.getByRole('button', { name: 'はじめる' }))
   expect(await screen.findByRole('heading', { name: 'ホーム' })).toBeInTheDocument()
@@ -28,6 +29,49 @@ describe('app flow', () => {
   beforeEach(() => {
     window.localStorage.clear()
     window.location.hash = ''
+  })
+
+  it('explains play, practice and speed for each planet without changing their routes', async () => {
+    const user = await completeOnboarding()
+    for (const [name, id] of [
+      ['かけざん', 'multiply'],
+      ['たしざん', 'add'],
+      ['ひきざん', 'subtract'],
+      ['わりざん', 'divide'],
+      ['小数', 'decimal'],
+      ['分数', 'fraction'],
+    ]) {
+      await user.click(
+        screen.getByRole('link', { name: new RegExp(`${name}のほし`) }),
+      )
+      const menu = screen.getByRole('region', {
+        name: `${name}のほしのメニュー`,
+      })
+      const cards = [
+        'あそぶ',
+        'おぼえる',
+        id === 'add' || id === 'subtract' ? 'すぴーど' : 'スピード',
+      ].map((label) =>
+        within(menu).getByRole('link', { name: new RegExp(label) }),
+      )
+      for (const card of cards) {
+        expect(
+          card.querySelector('.mode-description')?.textContent?.length,
+        ).toBeGreaterThan(20)
+        if (id === 'add' || id === 'subtract')
+          expect(
+            card.querySelector('.mode-description')?.textContent,
+          ).not.toMatch(/\p{Script=Han}/u)
+      }
+      expect(cards[0]).toHaveAttribute(
+        'href',
+        expect.stringContaining(
+          id === 'multiply' ? '/monster-battle' : `/rocket?planet=${id}`,
+        ),
+      )
+      await user.click(screen.getByRole('link', { name: 'もどる' }))
+      await screen.findByRole('heading', { name: 'ホーム' })
+    }
   })
 
   it('moves from onboarding to home and saves settings', async () => {

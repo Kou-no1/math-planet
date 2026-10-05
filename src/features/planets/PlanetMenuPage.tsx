@@ -33,6 +33,7 @@ type PlanetMode = {
   icon: string
   badge: string
   subtitle: string
+  description?: string
   callToAction?: string
 }
 
@@ -46,6 +47,7 @@ const multiplyModes: PlanetMode[] = [
     icon: 'VS',
     badge: '01',
     subtitle: 'もんすたーばとる',
+    description: 'もんすたーとたたかいながら、九九をたのしくくりかえそう。',
   },
   {
     label: 'おぼえる',
@@ -54,6 +56,7 @@ const multiplyModes: PlanetMode[] = [
     icon: '×',
     badge: '02',
     subtitle: 'だんをれんしゅう',
+    description: 'だんをえらんで、ひんとをみながらじっくりれんしゅう。',
   },
   {
     label: 'スピード',
@@ -62,6 +65,7 @@ const multiplyModes: PlanetMode[] = [
     icon: '30',
     badge: '03',
     subtitle: '30びょうチャレンジ',
+    description: '30びょうからちゃれんじ。はやさとおぼえたことをたしかめよう。',
   },
   {
     label: '高学年',
@@ -113,6 +117,7 @@ const additionModes: PlanetMode[] = [
     icon: '+',
     badge: '01',
     subtitle: '6えりあをれんしゅう',
+    description: 'えりあをえらんで、ひんとをみながらたしざんをれんしゅう。',
   },
   {
     label: 'あそぶ',
@@ -121,6 +126,7 @@ const additionModes: PlanetMode[] = [
     icon: 'VS',
     badge: '02',
     subtitle: 'たしざんろけっと',
+    description: 'たしざんでろけっとをとばそう。くりかえしこたえて、すらすらけいさん。',
   },
   {
     label: 'すぴーど',
@@ -129,6 +135,7 @@ const additionModes: PlanetMode[] = [
     icon: '30',
     badge: '03',
     subtitle: 'たしざんたいむ',
+    description: '30びょうからちゃれんじ。たしざんがどれだけできるかたしかめよう。',
   },
 ]
 
@@ -140,6 +147,7 @@ const subtractionModes: PlanetMode[] = [
     icon: '-',
     badge: '01',
     subtitle: '6えりあをれんしゅう',
+    description: 'えりあをえらんで、ひんとをみながらひきざんをれんしゅう。',
   },
   {
     label: 'あそぶ',
@@ -148,6 +156,7 @@ const subtractionModes: PlanetMode[] = [
     icon: 'VS',
     badge: '02',
     subtitle: 'ひきざんろけっと',
+    description: 'ひきざんでろけっとをとばそう。くりかえしこたえて、すらすらけいさん。',
   },
   {
     label: 'すぴーど',
@@ -156,6 +165,7 @@ const subtractionModes: PlanetMode[] = [
     icon: '30',
     badge: '03',
     subtitle: 'ひきざんたいむ',
+    description: '30びょうからちゃれんじ。ひきざんがどれだけできるかたしかめよう。',
   },
 ]
 
@@ -167,6 +177,7 @@ const divisionModes: PlanetMode[] = [
     icon: '÷',
     badge: '01',
     subtitle: '3エリアを練習',
+    description: 'わけかたやあまりを、ひんとでたしかめながられんしゅう。',
   },
   {
     label: 'あそぶ',
@@ -175,6 +186,7 @@ const divisionModes: PlanetMode[] = [
     icon: 'VS',
     badge: '02',
     subtitle: 'わりざんロケット',
+    description: 'わりざんでロケットをとばそう。あまりのある問題にもチャレンジ。',
   },
   {
     label: 'スピード',
@@ -183,15 +195,45 @@ const divisionModes: PlanetMode[] = [
     icon: '30',
     badge: '03',
     subtitle: 'わりざんタイム',
+    description: '30びょうからチャレンジ。わりざんのはやさと正確さをたしかめよう。',
   },
 ]
 
 function modesForPlanet(planetId: PlanetId): PlanetMode[] {
-  if (isNumericPlanetId(planetId)) return [
-    { label: 'おぼえる', href: `/learn?planet=${planetId}`, ready: true, icon: planetId === 'decimal' ? '0.1' : '1/2', badge: '01', subtitle: `${numericAreasForPlanet(planetId).length}エリアを練習` },
-    { label: 'あそぶ', href: `/rocket?planet=${planetId}`, ready: true, icon: 'VS', badge: '02', subtitle: `${planetId === 'decimal' ? '小数' : '分数'}ロケット` },
-    { label: 'スピード', href: `/speed?planet=${planetId}`, ready: true, icon: '30', badge: '03', subtitle: 'タイムチャレンジ' },
-  ]
+  if (isNumericPlanetId(planetId))
+    return [
+      {
+        label: 'おぼえる',
+        href: `/learn?planet=${planetId}`,
+        ready: true,
+        icon: planetId === 'decimal' ? '0.1' : '1/2',
+        badge: '01',
+        subtitle: `${numericAreasForPlanet(planetId).length}エリアを練習`,
+        description:
+          planetId === 'decimal'
+            ? '小数の位をたしかめながら、えらんだ計算をじっくりれんしゅう。'
+            : '分母や分子をたしかめながら、分数のたし算・ひき算をれんしゅう。',
+      },
+      {
+        label: 'あそぶ',
+        href: `/rocket?planet=${planetId}`,
+        ready: true,
+        icon: 'VS',
+        badge: '02',
+        subtitle: `${planetId === 'decimal' ? '小数' : '分数'}ロケット`,
+        description: `${planetId === 'decimal' ? '小数' : '分数'}でロケットをとばそう。くりかえしこたえて、計算になれよう。`,
+      },
+      {
+        label: 'スピード',
+        href: `/speed?planet=${planetId}`,
+        ready: true,
+        icon: '30',
+        badge: '03',
+        subtitle: 'タイムチャレンジ',
+        description:
+          'じかんないに何問とけるかな？ 計算のはやさと正確さをたしかめよう。',
+      },
+    ]
   if (planetId === 'add') {
     return additionModes
   }
@@ -234,7 +276,8 @@ function modeCard(mode: PlanetMode): ReactNode {
       </span>
       <strong>{mode.label}</strong>
       <small>{mode.subtitle}</small>
-      <span>{mode.callToAction ?? (mode.ready ? 'すたーと' : 'じゅんびちゅう')}</span>
+      {mode.description ? <p className="mode-description">{mode.description}</p> : null}
+      <span className="mode-call-to-action">{mode.callToAction ?? (mode.ready ? 'すたーと' : 'じゅんびちゅう')}</span>
     </>
   )
 

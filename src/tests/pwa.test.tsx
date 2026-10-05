@@ -1,7 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { appLaunchUrl, APP_BASE } from '../pwa/config'
+import appHtml from '../../index.html?raw'
+import appIcon from '../../public/icons/keisan-no-hoshi-v2.svg?raw'
+import compatibilityIcon from '../../public/favicon.svg?raw'
+import { appLaunchUrl, APP_BASE, APP_ICONS, APP_NAME } from '../pwa/config'
 import {
   captureInstallPrompt,
   getPwaState,
@@ -46,6 +49,30 @@ beforeEach(() => {
 })
 
 describe('PWA capabilities and update gates', () => {
+  it('uses the same Japanese app name and versioned subpath icons in browser and Apple metadata', () => {
+    const html = new DOMParser().parseFromString(appHtml, 'text/html')
+    expect(html.title).toBe(APP_NAME)
+    for (const name of ['application-name', 'apple-mobile-web-app-title']) {
+      expect(
+        html.querySelector(`meta[name="${name}"]`)?.getAttribute('content'),
+      ).toBe(APP_NAME)
+    }
+    expect(html.querySelector('link[rel="icon"]')?.getAttribute('href')).toBe(
+      `%BASE_URL%${APP_ICONS.favicon}`,
+    )
+    expect(
+      html.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'),
+    ).toBe(`%BASE_URL%${APP_ICONS.apple}`)
+    for (const file of Object.values(APP_ICONS)) {
+      expect(file).toMatch(/^icons\/keisan-no-hoshi-.*v2\.(?:svg|png)$/)
+    }
+    expect(compatibilityIcon).toBe(appIcon)
+    expect(
+      new DOMParser()
+        .parseFromString(appIcon, 'image/svg+xml')
+        .querySelector('title')?.textContent,
+    ).toBe(APP_NAME)
+  })
   it('keeps a stable, sanitized application identity without onboarding/hash/query', () => {
     expect(APP_BASE).toBe('/math-planet/')
     expect(appLaunchUrl('https://manabitane.jp')).toBe(

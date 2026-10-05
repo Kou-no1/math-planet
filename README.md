@@ -110,6 +110,8 @@ src/
 
 JS/CSSの依存グラフ（遅延読み込みを含む）と小さなアイコンを事前取得します。全画像・動画は対象にしません。実行時の画像キャッシュは同一オリジンかつSWスコープ内、40件・7日までです。実際の対象一覧・容量はビルド後の `dist/pwa-cache-report.json`、確認結果は [PWA_TEST_REPORT](docs/PWA_TEST_REPORT.md) を参照してください。
 
+Phase 18.1ではブラウザ・Apple・manifestの表示名、版付きアイコン、スマホのおぼえる開始画面、星別のモード説明を整理しています。確認記録は [UI_TEST_REPORT](docs/UI_TEST_REPORT.md) を参照してください。既に端末へ追加したアイコンの名前・絵が更新されるタイミングはOSで異なり、未確認です。サイトデータの削除は勧めません。
+
 HTTPSまたはlocalhostで `npm run build` → `npm run preview` を使用してください。LANの通常HTTPはSWを利用できないことがあるため、本番相当の判定には使いません。`scripts/verify-pwa.mjs` は隔離したブラウザとローカルproduction配信で、オフライン・2版の更新・保存拒否・複数タブ・モバイルを試験します。Playwrightを利用できる環境では `PLAYWRIGHT_MODULE` にモジュールのパスを指定できます。
 
 ```powershell

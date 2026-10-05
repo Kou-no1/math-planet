@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { KukucchiCharacter } from '../character/KukucchiCharacter'
 
 type ModeStartScreenProps = {
-  title: string
+  title: ReactNode
   eyebrow: string
   description: string
   level: number

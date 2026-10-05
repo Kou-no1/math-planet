@@ -2,6 +2,8 @@
 
 確認日: 2026-10-04、仕上げ: 2026-10-05。対象: `Kou-no1/math-planet`。
 
+この文書の容量・ファイル名はPhase 18時点の記録。続く表示名・版付きアイコン・モバイルUI調整の確認は [UI_TEST_REPORT](UI_TEST_REPORT.md)、最新の容量・対象は各ビルドの `dist/pwa-cache-report.json` を参照。
+
 ## 作業範囲と保護したもの
 
 - 実装指示書 `KEISAN_NO_HOSHI_PWA_CODEX_HANDOFF.md` に沿って実装した。レビューだけで終了していない。

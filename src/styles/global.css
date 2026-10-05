@@ -212,7 +212,9 @@ a {
   margin: 10px 0 18px;
   color: var(--cyan);
   text-align: center;
-  font-size: 2.8rem;
+  font-size: 2rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
   text-shadow: 0 0 20px rgba(104, 244, 255, 0.7);
 }
 
@@ -4530,6 +4532,68 @@ legend {
   min-height: 132px;
 }
 
+.planet-mode-card:has(.mode-description) {
+  grid-template-columns: 52px minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr auto;
+  justify-items: start;
+  min-width: 0;
+  min-height: 168px;
+  gap: 4px 12px;
+  padding: 16px;
+  text-align: left;
+}
+
+.planet-mode-card:has(.mode-description) .mode-icon {
+  grid-column: 1;
+  grid-row: 1 / 3;
+  width: 52px;
+  height: 52px;
+  font-size: 1.35rem;
+}
+
+.planet-mode-card:has(.mode-description) .mode-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  min-width: 26px;
+  min-height: 22px;
+  font-size: 0.7rem;
+}
+
+.planet-mode-card:has(.mode-description) > strong,
+.planet-mode-card:has(.mode-description) > small {
+  grid-column: 2;
+  min-width: 0;
+  padding-right: 26px;
+  overflow-wrap: anywhere;
+}
+
+.planet-mode-card:has(.mode-description) > strong {
+  align-self: end;
+  font-size: 1.2rem;
+}
+
+.planet-mode-card:has(.mode-description) > small {
+  color: #43516a;
+}
+
+.planet-mode-card .mode-description {
+  grid-column: 1 / -1;
+  margin: 6px 0;
+  color: var(--card-ink);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.planet-mode-card:has(.mode-description) .mode-call-to-action {
+  grid-column: 2;
+  justify-self: end;
+  margin-top: 4px;
+  color: #07586b;
+  text-shadow: none;
+}
+
 .planet-area-list {
   display: grid;
   gap: 12px;
@@ -6197,12 +6261,100 @@ legend {
   font-size: clamp(1rem, 3.5vw, 1.35rem);
 }
 
+.learn-ready-shell {
+  height: auto;
+  overflow: visible;
+}
+
+.learn-ready-shell main {
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.learn-ready-shell .mode-start-screen {
+  height: auto;
+  min-height: 0;
+  grid-template-rows: auto auto auto;
+  overflow: visible;
+}
+
+.learn-ready-shell .mode-start-copy {
+  overflow: visible;
+}
+
+.learn-ready-shell .mode-start-copy h2 {
+  font-size: 1.4rem;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.learn-ready-shell .mode-start-copy .title-line {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #c5dee7;
+}
+
+.learn-ready-shell .mode-start-copy .welcome {
+  color: #a4cbd9;
+}
+
+.learn-ready-shell .learn-practice-label {
+  display: inline-block;
+  white-space: nowrap;
+}
+
 .learn-ready-shell .mode-start-options {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(min-content, auto);
+  overflow: visible;
+  gap: 12px;
 }
 
 .learn-ready-shell .stage-select-panel {
   grid-column: 1 / -1;
+}
+
+.learn-ready-shell .learn-kind-panel {
+  grid-column: 1 / -1;
+}
+
+.learn-ready-shell .duration-select-panel,
+.learn-ready-shell .stage-select-panel {
+  min-width: 0;
+  padding: 10px;
+  gap: 8px;
+}
+
+.learn-ready-shell .duration-select-panel .learn-start-segmented {
+  grid-template-columns: repeat(auto-fit, minmax(min(112px, 100%), 1fr));
+}
+
+.learn-ready-shell .learn-kind-panel .learn-kind-segmented {
+  grid-template-columns: repeat(auto-fit, minmax(min(96px, 100%), 1fr));
+}
+
+.learn-ready-shell .learn-start-segmented button {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.learn-ready-shell .start-option-header {
+  flex-wrap: wrap;
+}
+
+.learn-ready-shell .mode-start-actions {
+  overflow: visible;
+}
+
+@media (max-width: 700px) {
+  .learn-ready-shell .mode-start-options {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .speed-ready-shell .mode-start-options {
@@ -8266,17 +8418,24 @@ legend {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .learn-ready-shell .learn-answer-mode-panel {
-    padding: 2px 6px;
+  .learn-ready-shell .mode-start-screen {
+    grid-template-columns: 118px minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
   }
 
-  .learn-ready-shell .learn-answer-mode-panel .learn-start-segmented {
-    gap: 4px;
+  .learn-ready-shell .mode-start-copy {
+    grid-column: 2;
+    grid-row: 1;
   }
 
-  .learn-ready-shell .learn-answer-mode-panel button {
-    min-height: 28px;
-    padding-block: 2px;
+  .learn-ready-shell .mode-start-options {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  .learn-ready-shell .mode-start-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
   }
 
   .addition-rocket-difficulty-panel .segmented {

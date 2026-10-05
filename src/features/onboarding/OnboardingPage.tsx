@@ -6,6 +6,7 @@ import { playerIcons } from '../../data/playerIcons'
 import { initializeAudio } from '../../services/audioService'
 import { createPlayerFromOnboarding } from '../../storage/saveData'
 import { useSaveData } from '../../hooks/useSaveData'
+import { APP_ICONS, APP_NAME } from '../../pwa/config'
 
 export function OnboardingPage() {
   const navigate = useNavigate()
@@ -35,10 +36,14 @@ export function OnboardingPage() {
   return (
     <main className="onboarding-page">
       <section className="onboarding-panel" aria-labelledby="onboarding-title">
-        <span className="brand-mark big" aria-hidden="true">
-          く
-        </span>
-        <h1 id="onboarding-title">くくっち</h1>
+        <img
+          className="brand-mark big"
+          src={`${import.meta.env.BASE_URL}${APP_ICONS.favicon}`}
+          alt=""
+          width="78"
+          height="78"
+        />
+        <h1 id="onboarding-title">{APP_NAME}</h1>
         <form onSubmit={handleSubmit} className="setup-form">
           <label>
             よびな
@@ -61,7 +66,10 @@ export function OnboardingPage() {
                   onClick={() => setIcon(option.id)}
                   aria-pressed={option.id === icon}
                 >
-                  <PlayerIconBadge icon={option} className="settings-level-icon" />
+                  <PlayerIconBadge
+                    icon={option}
+                    className="settings-level-icon"
+                  />
                   {option.label}
                 </button>
               ))}

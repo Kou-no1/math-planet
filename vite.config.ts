@@ -6,6 +6,7 @@ import { getManifest } from 'workbox-build'
 import {
   APP_BASE,
   APP_CACHE_PREFIX,
+  APP_ICONS,
   APP_NAME,
   APP_THEME_COLOR,
 } from './src/pwa/config'
@@ -20,7 +21,7 @@ export default defineConfig({
   base: APP_BASE,
   define: {
     __PWA_BUILD_ID__: JSON.stringify(
-      process.env.PWA_BUILD_ID ?? 'phase-18-pwa',
+      process.env.PWA_BUILD_ID ?? 'phase-18.1-ui',
     ),
   },
   plugins: [
@@ -33,7 +34,7 @@ export default defineConfig({
       filename: 'sw.js',
       includeAssets: [
         'icons.svg',
-        'icons/app-icon.svg',
+        APP_ICONS.favicon,
         'icons/*.png',
         'pwa-coordination.js',
       ],
@@ -49,19 +50,19 @@ export default defineConfig({
         background_color: APP_THEME_COLOR,
         icons: [
           {
-            src: 'icons/pwa-192.png',
+            src: APP_ICONS.small,
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icons/pwa-512.png',
+            src: APP_ICONS.large,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any',
           },
           {
-            src: 'icons/pwa-maskable-512.png',
+            src: APP_ICONS.maskable,
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',
@@ -111,7 +112,7 @@ export default defineConfig({
               'assets/*.js',
               'assets/*.css',
               'icons.svg',
-              'icons/app-icon.svg',
+              APP_ICONS.favicon,
               'icons/*.png',
               'pwa-coordination.js',
               'manifest.webmanifest',
@@ -135,7 +136,7 @@ export default defineConfig({
             'dist/pwa-cache-report.json',
             JSON.stringify(
               {
-                build: process.env.PWA_BUILD_ID ?? 'phase-18-pwa',
+                build: process.env.PWA_BUILD_ID ?? 'phase-18.1-ui',
                 files,
                 workerFiles,
                 totalBytes: files.reduce(

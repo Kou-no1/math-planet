@@ -431,13 +431,18 @@ export function LearnPage() {
       {phase === 'ready' ? (
         <ModeStartScreen
           title={
-            learnKind === 'kuku'
-              ? `${stage}のだん れんしゅう`
-              : learnKind === 'addition'
-                ? `${selectedAdditionArea.name} れんしゅう`
-                : learnKind === 'subtraction'
-                  ? `${selectedSubtractionArea.name} れんしゅう`
-                  : `${learnKindLabels[learnKind]} れんしゅう`
+            <>
+              <span>
+                {learnKind === 'kuku'
+                  ? `${stage}のだん`
+                  : learnKind === 'addition'
+                    ? selectedAdditionArea.name
+                    : learnKind === 'subtraction'
+                      ? selectedSubtractionArea.name
+                      : learnKindLabels[learnKind]}
+              </span>{' '}
+              <span className="learn-practice-label">れんしゅう</span>
+            </>
           }
           eyebrow={
             learnKind === 'addition' || learnKind === 'subtraction'
@@ -455,7 +460,7 @@ export function LearnPage() {
           {!fromAdditionPlanet && !fromSubtractionPlanet && !fromDivisionPlanet && !numericPlanet ? (
             <div className="duration-select-panel learn-kind-panel" aria-label="けいさんをえらぶ">
               <strong>けいさん</strong>
-              <div className="segmented learn-start-segmented">
+              <div className="segmented learn-start-segmented learn-kind-segmented">
                 {(['kuku', 'addition', 'division', 'square', 'pi'] as const).map((kind) => (
                   <button
                     className={learnKind === kind ? 'selected' : ''}
@@ -594,7 +599,7 @@ export function LearnPage() {
           ) : null}
 
           {learnKind === 'kuku' ? (
-            <div className="duration-select-panel" aria-label="じゅんばんをえらぶ">
+            <div className="duration-select-panel learn-order-panel" aria-label="じゅんばんをえらぶ">
               <strong>じゅんばん</strong>
               <div className="segmented learn-start-segmented">
                 {(['random', 'ascending', 'descending'] as const).map((order) => (

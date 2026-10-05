@@ -115,6 +115,9 @@ async function home(page) {
 }
 async function onboarding(page) {
   await page.goto(base)
+  await page
+    .getByRole('heading', { name: 'けいさんのほし', exact: true })
+    .waitFor()
   await page.getByLabel('よびな', { exact: true }).fill('みらい')
   await page.getByRole('button', { name: 'はじめる', exact: true }).click()
   await page.getByRole('button', { name: 'スキップ', exact: true }).click()
@@ -190,6 +193,68 @@ async function choices(page, viewport) {
     )
   }
 }
+
+async function setupGeometry(page) {
+  const copy = await page.locator('.mode-start-copy').boundingBox()
+  const options = await page.locator('.mode-start-options').boundingBox()
+  const actions = await page.locator('.mode-start-actions').boundingBox()
+  assert.ok(
+    copy.y + copy.height <= options.y + 1,
+    'setup header overlaps choices',
+  )
+  assert.ok(
+    options.y + options.height <= actions.y + 1,
+    'setup choices overlap start',
+  )
+  assert.ok(
+    await page.locator('.mode-start-options > div').evaluateAll((panels) => {
+      const rects = panels.map((panel) => panel.getBoundingClientRect())
+      return panels.every((panel, index) => {
+        const bounds = rects[index]
+        const controlsFit = [...panel.querySelectorAll('button')].every(
+          (button) => {
+            const rect = button.getBoundingClientRect()
+            return (
+              rect.left >= bounds.left &&
+              rect.right <= bounds.right + 1 &&
+              rect.top >= bounds.top &&
+              rect.bottom <= bounds.bottom + 1
+            )
+          },
+        )
+        return (
+          controlsFit &&
+          rects.every(
+            (rect, other) =>
+              other === index ||
+              rect.right <= bounds.left + 1 ||
+              rect.left >= bounds.right - 1 ||
+              rect.bottom <= bounds.top + 1 ||
+              rect.top >= bounds.bottom - 1,
+          )
+        )
+      })
+    }),
+    'setup panel boundaries overlap or contain overflowing buttons',
+  )
+  const label = page.locator('.learn-practice-label')
+  if (await label.count())
+    assert.ok(
+      await label.evaluate(
+        (element) =>
+          element.getBoundingClientRect().height <=
+            parseFloat(getComputedStyle(element).lineHeight) + 1 &&
+          element.scrollWidth <= element.clientWidth + 1,
+      ),
+      'practice label should not split into isolated characters',
+    )
+  for (const tab of await page.locator('.learn-kind-segmented button').all()) {
+    assert.ok(
+      (await tab.boundingBox()).width >= 95,
+      'learn tab is squeezed instead of wrapping',
+    )
+  }
+}
 async function useFixture(context, fixture) {
   await context.addInitScript((data) => {
     if (!localStorage.getItem('kukucchi-save-v1'))
@@ -212,6 +277,23 @@ try {
     await context.request.get(`${base}manifest.webmanifest`)
   ).json()
   assert.equal(manifest.name, 'けいさんのほし')
+  assert.equal(manifest.short_name, manifest.name)
+  assert.equal(await page.title(), manifest.name)
+  for (const name of ['application-name', 'apple-mobile-web-app-title'])
+    assert.equal(
+      await page.locator(`meta[name="${name}"]`).getAttribute('content'),
+      manifest.name,
+    )
+  const favicon = await page.locator('link[rel="icon"]').getAttribute('href')
+  const appleIcon = await page
+    .locator('link[rel="apple-touch-icon"]')
+    .getAttribute('href')
+  assert.equal(favicon, '/math-planet/icons/keisan-no-hoshi-v2.svg')
+  assert.equal(appleIcon, '/math-planet/icons/keisan-no-hoshi-apple-180-v2.png')
+  assert.equal(
+    (await context.request.get(new URL(favicon, base).href)).status(),
+    200,
+  )
   assert.equal(manifest.lang, 'ja')
   assert.equal(manifest.start_url, '/math-planet/')
   assert.equal(manifest.scope, '/math-planet/')
@@ -219,9 +301,13 @@ try {
   assert.equal(manifest.display, 'standalone')
   for (const icon of [
     ...manifest.icons,
-    { src: 'icons/apple-touch-icon-180.png', sizes: '180x180' },
+    { src: 'icons/keisan-no-hoshi-apple-180-v2.png', sizes: '180x180' },
   ]) {
     const response = await context.request.get(new URL(icon.src, base).href)
+    assert.ok(
+      icon.src.startsWith('icons/keisan-no-hoshi-') &&
+        icon.src.endsWith('-v2.png'),
+    )
     assert.equal(response.status(), 200)
     const bytes = await response.body()
     const size = Number(icon.sizes.split('x')[0])
@@ -238,7 +324,9 @@ try {
   )
   assert.ok(report.cache.files.some((entry) => /LearnPage/.test(entry.url)))
   assert.ok(report.cache.files.some((entry) => /ResultPage/.test(entry.url)))
-  check('manifest, scope, PNG dimensions, Apple icon, actual cache graph')
+  check(
+    'Japanese browser/Apple/manifest names, versioned subpath icons, scope, PNG dimensions, actual cache graph',
+  )
   await page.evaluate(() => {
     const data = JSON.parse(localStorage.getItem('kukucchi-save-v1'))
     data.settings.soundEnabled = false
@@ -387,6 +475,70 @@ try {
     await p.goto(`${base}#/settings`)
     await p.getByRole('heading', { name: 'せってい', exact: true }).waitFor()
     await geometry(p, 'settings', viewport)
+    await home(p)
+    await p.goto(`${base}#/learn?planet=multiply`)
+    await p.getByRole('button', { name: '九九', exact: true }).waitFor()
+    for (const [label, key] of [
+      ['九九', 'kuku'],
+      ['たしざん', 'add'],
+      ['わりざん', 'divide'],
+      ['平方数', 'square'],
+      ['円周率', 'pi'],
+    ]) {
+      await p.getByRole('button', { name: label, exact: true }).click()
+      assert.equal(
+        await p
+          .getByRole('button', { name: label, exact: true })
+          .getAttribute('aria-pressed'),
+        'true',
+      )
+      await setupGeometry(p)
+      await geometry(p, `learn-setup-${key}`, viewport)
+    }
+    for (const planet of [
+      'multiply',
+      'add',
+      'subtract',
+      'divide',
+      'decimal',
+      'fraction',
+    ]) {
+      await p.goto(`${base}#/planet/${planet}`)
+      await p.locator('.planet-mode-grid .mode-description').first().waitFor()
+      const cards = p.locator('.planet-mode-card:has(.mode-description)')
+      assert.equal(await cards.count(), 3)
+      assert.ok(
+        await cards.evaluateAll((elements) =>
+          elements.every((card) => {
+            const bounds = card.getBoundingClientRect()
+            if (
+              getComputedStyle(card.querySelector('.mode-description'))
+                .color !== getComputedStyle(card.querySelector('strong')).color
+            )
+              return false
+            return [...card.children].every((child) => {
+              const rect = child.getBoundingClientRect()
+              return (
+                rect.left >= bounds.left &&
+                rect.right <= bounds.right + 1 &&
+                rect.top >= bounds.top &&
+                rect.bottom <= bounds.bottom + 1 &&
+                child.scrollWidth <= child.clientWidth + 1
+              )
+            })
+          }),
+        ),
+        `${planet} mode card text overflows its frame`,
+      )
+      await cards
+        .first()
+        .screenshot({
+          path: join(output, `${viewport.width}-menu-${planet}-card.png`),
+        })
+      await geometry(p, `menu-${planet}`, viewport)
+    }
+    await p.goto(`${base}#/settings`)
+    await p.getByRole('heading', { name: 'せってい', exact: true }).waitFor()
     await p.getByLabel('キャラのなまえ', { exact: true }).focus()
     if (viewport.width < 500) {
       await p.setViewportSize({
@@ -413,7 +565,7 @@ try {
     await c.close()
   }
   check(
-    'six viewport layouts, choice hit tests, integer keypad, reduced viewport and rotation simulations',
+    'six viewport layouts, all five learn tabs and setup frames, descriptions on six planet menus, choice hit tests, keypad, reduced viewport and rotation simulations',
   )
 
   for (const scenario of ['get-denied', 'set-quota', 'corrupt', 'future']) {

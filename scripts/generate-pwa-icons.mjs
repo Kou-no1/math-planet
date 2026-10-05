@@ -1,10 +1,11 @@
-import { readFile, mkdir } from 'node:fs/promises'
+import { readFile, mkdir, copyFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 
 const { chromium } = createRequire(import.meta.url)(
   process.env.PLAYWRIGHT_MODULE ?? 'playwright',
 )
-const source = await readFile('public/icons/app-icon.svg', 'utf8')
+const source = await readFile('public/icons/keisan-no-hoshi-v2.svg', 'utf8')
+await copyFile('public/icons/keisan-no-hoshi-v2.svg', 'public/favicon.svg')
 await mkdir('public/icons', { recursive: true })
 const browser = await chromium.launch({
   channel: process.env.QA_BROWSER_CHANNEL ?? 'msedge',
@@ -12,10 +13,10 @@ const browser = await chromium.launch({
 })
 try {
   for (const [name, size, maskable] of [
-    ['pwa-192.png', 192, false],
-    ['pwa-512.png', 512, false],
-    ['pwa-maskable-512.png', 512, true],
-    ['apple-touch-icon-180.png', 180, false],
+    ['keisan-no-hoshi-192-v2.png', 192, false],
+    ['keisan-no-hoshi-512-v2.png', 512, false],
+    ['keisan-no-hoshi-maskable-512-v2.png', 512, true],
+    ['keisan-no-hoshi-apple-180-v2.png', 180, false],
   ]) {
     const page = await browser.newPage({
       viewport: { width: size, height: size },
